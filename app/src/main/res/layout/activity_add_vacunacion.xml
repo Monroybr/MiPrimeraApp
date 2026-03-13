@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="20dp">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:id="@+id/tvTituloVacuna"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="Agregar Vacunación"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:textAlignment="center"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"/>
+
+        <TextView
+            android:id="@+id/tvMascota"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="Selecciona la mascota"
+            android:layout_marginTop="16dp"
+            app:layout_constraintTop_toBottomOf="@id/tvTituloVacuna"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"/>
+
+        <Spinner
+            android:id="@+id/spMascotas"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            app:layout_constraintTop_toBottomOf="@id/tvMascota"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"/>
+
+        <TextView
+            android:id="@+id/tvVacuna"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="Selecciona la vacuna"
+            android:layout_marginTop="14dp"
+            app:layout_constraintTop_toBottomOf="@id/spMascotas"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"/>
+
+        <Spinner
+            android:id="@+id/spVacunas"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            app:layout_constraintTop_toBottomOf="@id/tvVacuna"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"/>
+
+        <EditText
+            android:id="@+id/etFechaAplicacion"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:hint="Fecha de aplicación (dd/mm/aaaa)"
+            android:focusable="false"
+            android:clickable="true"
+            android:layout_marginTop="14dp"
+            app:layout_constraintTop_toBottomOf="@id/spVacunas"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"/>
+
+        <EditText
+            android:id="@+id/etLugar"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:hint="Lugar (clínica, veterinaria, etc.)"
+            android:layout_marginTop="10dp"
+            app:layout_constraintTop_toBottomOf="@id/etFechaAplicacion"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"/>
+
+        <TextView
+            android:id="@+id/tvProximaDosis"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="Próxima dosis: -"
+            android:textStyle="bold"
+            android:layout_marginTop="14dp"
+            app:layout_constraintTop_toBottomOf="@id/etLugar"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"/>
+
+        <Button
+            android:id="@+id/btnGuardarVacuna"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="Guardar vacunación"
+            android:layout_marginTop="16dp"
+            app:layout_constraintTop_toBottomOf="@id/tvProximaDosis"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"/>
+
+        <TextView
+            android:id="@+id/tvMensajeVacuna"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textAlignment="center"
+            android:layout_marginTop="10dp"
+            app:layout_constraintTop_toBottomOf="@id/btnGuardarVacuna"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"/>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</ScrollView>
