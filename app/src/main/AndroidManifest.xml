@@ -13,13 +13,27 @@
         android:theme="@style/Theme.MiPrimeraApp">
 
         <activity
-            android:name=".CartItem"
+            android:name=".BusquedaActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".SharePetInfoActivity"
+            android:exported="false" />
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.provider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+        <activity
+            android:name=".NotificationsActivity"
             android:exported="false" />
         <activity
-            android:name=".CartAdapter"
-            android:exported="false" />
-        <activity
-            android:name=".OrderActivity"
+            android:name=".OrdersHistoryActivity"
             android:exported="false" />
         <activity
             android:name=".CheckoutActivity"
@@ -28,39 +42,32 @@
             android:name=".CartActivity"
             android:exported="false" />
         <activity
-            android:name=".SharePetInfoActivity"
+            android:name=".StoreActivity"
             android:exported="false" />
 
         <activity
-            android:name=".HistorialListActivity"
+            android:name=".HistorialDetailActivity"
             android:exported="false" />
         <activity
-            android:name=".AddHistorialActivity"
+            android:name=".HistorialListActivity"
             android:exported="false" />
         <activity
             android:name=".VacunasListActivity"
             android:exported="false" />
         <activity
+            android:name=".AddHistorialActivity"
+            android:exported="false" />
+        <activity
             android:name=".AddVacunacionActivity"
             android:exported="false" />
-
         <activity
             android:name=".PetDetailActivity"
             android:exported="false" />
         <activity
-            android:name=".BusquedaActivity"
-            android:exported="false" />
-        <activity
-            android:name=".NotificationsActivity"
+            android:name=".PetsListActivity"
             android:exported="false" />
         <activity
             android:name=".AddPetActivity"
-            android:exported="false" />
-        <activity
-            android:name=".StoreActivity"
-            android:exported="false" />
-        <activity
-            android:name=".PetsListActivity"
             android:exported="false" />
         <activity
             android:name=".RegisterActivity"
