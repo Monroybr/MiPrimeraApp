@@ -14,6 +14,7 @@
         android:orientation="vertical"
         android:padding="14dp">
 
+        <!-- Nombre -->
         <TextView
             android:id="@+id/tvNombreCart"
             android:layout_width="match_parent"
@@ -22,6 +23,7 @@
             android:textSize="18sp"
             android:textStyle="bold" />
 
+        <!-- Categoría -->
         <TextView
             android:id="@+id/tvCategoriaCart"
             android:layout_width="match_parent"
@@ -29,6 +31,7 @@
             android:text="Categoría"
             android:layout_marginTop="4dp" />
 
+        <!-- Precio unitario -->
         <TextView
             android:id="@+id/tvPrecioCart"
             android:layout_width="match_parent"
@@ -36,6 +39,7 @@
             android:text="Precio unitario"
             android:layout_marginTop="4dp" />
 
+        <!-- Cantidad -->
         <TextView
             android:id="@+id/tvCantidadCart"
             android:layout_width="match_parent"
@@ -43,6 +47,7 @@
             android:text="Cantidad: 1"
             android:layout_marginTop="4dp" />
 
+        <!-- Subtotal -->
         <TextView
             android:id="@+id/tvSubtotalCart"
             android:layout_width="match_parent"
@@ -51,6 +56,7 @@
             android:textStyle="bold"
             android:layout_marginTop="6dp" />
 
+        <!-- Botones -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

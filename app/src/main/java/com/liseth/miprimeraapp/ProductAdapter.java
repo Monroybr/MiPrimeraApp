@@ -15,6 +15,7 @@ import java.util.Locale;
 
 public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductViewHolder> {
 
+    // Aquí creo una interfaz para manejar la acción de agregar productos al carrito
     public interface OnAddToCartListener {
         void onAddToCart(Product product);
     }
@@ -22,6 +23,7 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
     private final List<Product> products;
     private final OnAddToCartListener listener;
 
+    // Constructor del adaptador
     public ProductAdapter(List<Product> products, OnAddToCartListener listener) {
         this.products = products;
         this.listener = listener;
@@ -30,18 +32,22 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
     @NonNull
     @Override
     public ProductViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        // Aquí inflo el diseño de cada tarjeta de producto
         View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_product, parent, false);
         return new ProductViewHolder(view);
     }
 
     @Override
     public void onBindViewHolder(@NonNull ProductViewHolder holder, int position) {
+        // Obtengo el producto actual según la posición
         Product product = products.get(position);
 
+        // Muestro los datos del producto
         holder.tvNombreProducto.setText(product.nombre);
         holder.tvCategoriaProducto.setText("Categoría: " + product.categoria);
         holder.tvPrecioProducto.setText(String.format(Locale.getDefault(), "$ %.2f", product.precio));
 
+        // Botón para agregar al carrito
         holder.btnAgregarCarrito.setOnClickListener(v -> {
             if (listener != null) {
                 listener.onAddToCart(product);
@@ -55,6 +61,7 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
         return products.size();
     }
 
+    // ViewHolder para cada producto
     static class ProductViewHolder extends RecyclerView.ViewHolder {
 
         TextView tvNombreProducto, tvCategoriaProducto, tvPrecioProducto;
@@ -62,6 +69,7 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
 
         public ProductViewHolder(@NonNull View itemView) {
             super(itemView);
+
             tvNombreProducto = itemView.findViewById(R.id.tvNombreProducto);
             tvCategoriaProducto = itemView.findViewById(R.id.tvCategoriaProducto);
             tvPrecioProducto = itemView.findViewById(R.id.tvPrecioProducto);

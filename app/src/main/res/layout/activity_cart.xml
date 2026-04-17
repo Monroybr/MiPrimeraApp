@@ -6,6 +6,7 @@
     android:layout_height="match_parent"
     android:padding="16dp">
 
+    <!-- Título principal -->
     <TextView
         android:id="@+id/tvTituloCart"
         android:layout_width="0dp"
@@ -17,6 +18,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
+    <!-- Mensaje cuando no hay productos -->
     <TextView
         android:id="@+id/tvVacioCart"
         android:layout_width="0dp"
@@ -24,11 +26,12 @@
         android:text="Tu carrito está vacío."
         android:textAlignment="center"
         android:visibility="gone"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="12dp"
         app:layout_constraintTop_toBottomOf="@id/tvTituloCart"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
+    <!-- Lista de productos -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvCart"
         android:layout_width="0dp"
@@ -39,11 +42,12 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
+    <!-- Total -->
     <TextView
         android:id="@+id/tvTotalCart"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="Total: $0"
+        android:text="Total: $ 0.00"
         android:textSize="18sp"
         android:textStyle="bold"
         android:layout_marginTop="12dp"
@@ -51,6 +55,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
+    <!-- Botón vaciar -->
     <Button
         android:id="@+id/btnVaciarCart"
         android:layout_width="0dp"
@@ -61,6 +66,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
+    <!-- Botón finalizar -->
     <Button
         android:id="@+id/btnFinalizarCompra"
         android:layout_width="0dp"

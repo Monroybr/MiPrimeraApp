@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Locale;
 
 public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder> {
-
+    // interfaz para manejar las acciones del carrito desde la Activity
     public interface OnCartActionListener {
         void onAumentar(CartItem item);
         void onDisminuir(CartItem item);
@@ -31,28 +31,34 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
     @NonNull
     @Override
     public CartViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        // Aquí inflo el diseño de cada item del carrito
         View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_cart, parent, false);
         return new CartViewHolder(view);
     }
 
     @Override
     public void onBindViewHolder(@NonNull CartViewHolder holder, int position) {
+        // Obtengo el producto actual según la posición
         CartItem item = items.get(position);
 
+        // Muestro los datos del producto
         holder.tvNombreCart.setText(item.nombre);
         holder.tvCategoriaCart.setText("Categoría: " + item.categoria);
         holder.tvPrecioCart.setText(String.format(Locale.getDefault(), "Precio unitario: $ %.2f", item.precio));
         holder.tvCantidadCart.setText("Cantidad: " + item.cantidad);
         holder.tvSubtotalCart.setText(String.format(Locale.getDefault(), "Subtotal: $ %.2f", item.getSubtotal()));
 
+        // Botón para aumentar la cantidad
         holder.btnAumentar.setOnClickListener(v -> {
             if (listener != null) listener.onAumentar(item);
         });
 
+        // Botón para disminuir la cantidad
         holder.btnDisminuir.setOnClickListener(v -> {
             if (listener != null) listener.onDisminuir(item);
         });
 
+        // Botón para eliminar el producto
         holder.btnEliminar.setOnClickListener(v -> {
             if (listener != null) listener.onEliminar(item);
         });
@@ -63,6 +69,7 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
         return items.size();
     }
 
+    // ViewHolder para manejar los controles de cada fila
     static class CartViewHolder extends RecyclerView.ViewHolder {
 
         TextView tvNombreCart, tvCategoriaCart, tvPrecioCart, tvCantidadCart, tvSubtotalCart;
