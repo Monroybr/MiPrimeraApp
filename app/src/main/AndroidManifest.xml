@@ -2,8 +2,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-<uses-permission android:name="android.permission.INTERNET" />
+    <!-- Permiso para acceso a internet -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Permiso para verificar estado de red -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- Permiso para notificaciones (Android 13+) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:allowBackup="true"
@@ -15,75 +21,109 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.MiPrimeraApp">
 
+        <!-- API KEY de Google Maps -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyCf9bZ8hWrWtX8t_YfJeTYLHge4YRNFUvM" />
+
+        <!-- Provider para compartir archivos (PDF) -->
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.provider"
             android:exported="false"
             android:grantUriPermissions="true">
+
             <meta-data
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
+
+        <!-- ================= ACTIVITIES ================= -->
+
+        <!-- Búsqueda de veterinarias -->
         <activity
             android:name=".BusquedaActivity"
             android:exported="false" />
 
+        <!-- Compartir PDF -->
         <activity
             android:name=".SharePetInfoActivity"
             android:exported="false" />
+
+        <!-- Notificaciones -->
         <activity
             android:name=".NotificationsActivity"
             android:exported="false" />
+
+        <!-- Historial de pedidos -->
         <activity
             android:name=".OrdersHistoryActivity"
             android:exported="false" />
+
+        <!-- Checkout -->
         <activity
             android:name=".CheckoutActivity"
             android:exported="false" />
+
+        <!-- Carrito -->
         <activity
             android:name=".CartActivity"
             android:exported="false" />
+
+        <!-- Tienda -->
         <activity
             android:name=".StoreActivity"
             android:exported="false" />
 
+        <!-- Historial médico -->
         <activity
             android:name=".HistorialDetailActivity"
             android:exported="false" />
+
         <activity
             android:name=".HistorialListActivity"
             android:exported="false" />
+
+        <!-- Vacunas -->
         <activity
             android:name=".VacunasListActivity"
             android:exported="false" />
+
         <activity
             android:name=".AddHistorialActivity"
             android:exported="false" />
+
         <activity
             android:name=".AddVacunacionActivity"
             android:exported="false" />
+
+        <!-- Mascotas -->
         <activity
             android:name=".PetDetailActivity"
             android:exported="false" />
+
         <activity
             android:name=".PetsListActivity"
             android:exported="false" />
+
         <activity
             android:name=".AddPetActivity"
             android:exported="false" />
+
+        <!-- Usuario -->
         <activity
             android:name=".RegisterActivity"
             android:exported="false" />
+
         <activity
             android:name=".HomeActivity"
             android:exported="false" />
+
         <activity
             android:name=".LoginActivity"
             android:exported="false" />
 
+        <!-- MAIN -->
         <activity
             android:name=".MainActivity"
             android:exported="true">
@@ -94,6 +134,7 @@
             </intent-filter>
 
         </activity>
+
     </application>
 
 </manifest>

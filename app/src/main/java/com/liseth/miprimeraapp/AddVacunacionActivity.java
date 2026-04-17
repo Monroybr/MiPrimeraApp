@@ -48,20 +48,17 @@ public class AddVacunacionActivity extends AppCompatActivity {
         cargarMascotasEnSpinner();
         cargarVacunasEnSpinner();
 
-        //  Si vienes desde PetDetailActivity, selecciona la mascota automáticamente
-        int petIndexFromDetail = getIntent().getIntExtra("pet_index", -1);
-        if (petIndexFromDetail != -1) {
-            int pos = mascotasIndex.indexOf(petIndexFromDetail);
-            if (pos != -1) spMascotas.setSelection(pos);
-        }
-
         etFechaAplicacion.setOnClickListener(v -> mostrarDatePicker());
 
         spVacunas.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
-            @Override public void onItemSelected(android.widget.AdapterView<?> parent, android.view.View view, int position, long id) {
+            @Override
+            public void onItemSelected(android.widget.AdapterView<?> parent, android.view.View view, int position, long id) {
                 actualizarProximaDosis();
             }
-            @Override public void onNothingSelected(android.widget.AdapterView<?> parent) {}
+
+            @Override
+            public void onNothingSelected(android.widget.AdapterView<?> parent) {
+            }
         });
 
         btnGuardarVacuna.setOnClickListener(v -> guardarVacunacion());
@@ -83,7 +80,8 @@ public class AddVacunacionActivity extends AppCompatActivity {
                 mascotasNombres.add(nombre);
                 mascotasIndex.add(i);
             }
-        } catch (Exception ignored) { }
+        } catch (Exception ignored) {
+        }
 
         if (mascotasNombres.isEmpty()) {
             mascotasNombres.add("No hay mascotas registradas");
@@ -142,7 +140,7 @@ public class AddVacunacionActivity extends AppCompatActivity {
     }
 
     private int mesesSegunVacuna(String vacuna) {
-        if (vacuna != null && vacuna.contains("6 meses")) return 6;
+        if (vacuna.contains("6 meses")) return 6;
         return 12;
     }
 
@@ -153,18 +151,13 @@ public class AddVacunacionActivity extends AppCompatActivity {
             return;
         }
 
+        String nombreMascota = spMascotas.getSelectedItem().toString();
         String vacuna = (String) spVacunas.getSelectedItem();
         String fechaAplicacion = etFechaAplicacion.getText().toString().trim();
         String lugar = etLugar.getText().toString().trim();
 
         if (fechaAplicacion.isEmpty() || lugar.isEmpty()) {
             tvMensajeVacuna.setText("Completa fecha de aplicación y lugar.");
-            return;
-        }
-
-        // ✅ Evitar null
-        if (fechaAplicacionCal == null) {
-            tvMensajeVacuna.setText("Selecciona la fecha de aplicación.");
             return;
         }
 
@@ -189,6 +182,13 @@ public class AddVacunacionActivity extends AppCompatActivity {
             arr.put(obj);
 
             prefs.edit().putString("vacunas_json", arr.toString()).apply();
+
+            // Aquí muestro la notificación real en el celular cuando se registra la vacuna
+            NotificationHelper.mostrarNotificacion(
+                    this,
+                    "Vacuna registrada",
+                    "Se registró la vacuna \"" + vacuna + "\" para " + nombreMascota + ". Próxima dosis: " + proximaDosis
+            );
 
             tvMensajeVacuna.setText("Vacunación guardada ✅");
             finish();
