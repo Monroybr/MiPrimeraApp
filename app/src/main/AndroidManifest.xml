@@ -8,7 +8,7 @@
     <!-- Permiso para verificar estado de red -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
-    <!-- Permiso para notificaciones (Android 13+) -->
+    <!-- Permiso para notificaciones en Android 13 o superior -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
@@ -21,12 +21,12 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.MiPrimeraApp">
 
-        <!-- API KEY de Google Maps -->
+        <!-- Aquí configuro la API KEY de Google Maps -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyCf9bZ8hWrWtX8t_YfJeTYLHge4YRNFUvM" />
 
-        <!-- Provider para compartir archivos (PDF) -->
+        <!-- Provider para compartir archivos PDF -->
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.provider"
@@ -38,44 +38,40 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
-        <!-- ================= ACTIVITIES ================= -->
+        <!-- Receiver para recordatorios exactos de vacunas -->
+        <receiver
+            android:name=".VaccineReminderReceiver"
+            android:exported="false" />
 
-        <!-- Búsqueda de veterinarias -->
+        <!-- Activities de la aplicación -->
         <activity
             android:name=".BusquedaActivity"
             android:exported="false" />
 
-        <!-- Compartir PDF -->
         <activity
             android:name=".SharePetInfoActivity"
             android:exported="false" />
 
-        <!-- Notificaciones -->
         <activity
             android:name=".NotificationsActivity"
             android:exported="false" />
 
-        <!-- Historial de pedidos -->
         <activity
             android:name=".OrdersHistoryActivity"
             android:exported="false" />
 
-        <!-- Checkout -->
         <activity
             android:name=".CheckoutActivity"
             android:exported="false" />
 
-        <!-- Carrito -->
         <activity
             android:name=".CartActivity"
             android:exported="false" />
 
-        <!-- Tienda -->
         <activity
             android:name=".StoreActivity"
             android:exported="false" />
 
-        <!-- Historial médico -->
         <activity
             android:name=".HistorialDetailActivity"
             android:exported="false" />
@@ -84,7 +80,6 @@
             android:name=".HistorialListActivity"
             android:exported="false" />
 
-        <!-- Vacunas -->
         <activity
             android:name=".VacunasListActivity"
             android:exported="false" />
@@ -97,7 +92,6 @@
             android:name=".AddVacunacionActivity"
             android:exported="false" />
 
-        <!-- Mascotas -->
         <activity
             android:name=".PetDetailActivity"
             android:exported="false" />
@@ -110,7 +104,6 @@
             android:name=".AddPetActivity"
             android:exported="false" />
 
-        <!-- Usuario -->
         <activity
             android:name=".RegisterActivity"
             android:exported="false" />
@@ -123,7 +116,7 @@
             android:name=".LoginActivity"
             android:exported="false" />
 
-        <!-- MAIN -->
+        <!-- Activity principal -->
         <activity
             android:name=".MainActivity"
             android:exported="true">
@@ -134,7 +127,6 @@
             </intent-filter>
 
         </activity>
-
     </application>
 
 </manifest>

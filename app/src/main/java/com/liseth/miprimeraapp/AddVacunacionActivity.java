@@ -1,7 +1,11 @@
 package com.liseth.miprimeraapp;
 
+import android.app.AlarmManager;
 import android.app.DatePickerDialog;
+import android.app.PendingIntent;
+import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.Bundle;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -26,6 +30,7 @@ public class AddVacunacionActivity extends AppCompatActivity {
     private TextView tvProximaDosis, tvMensajeVacuna;
     private Button btnGuardarVacuna;
 
+    // Estas listas me ayudan a cargar mascotas y vacunas en los Spinner
     private final ArrayList<String> mascotasNombres = new ArrayList<>();
     private final ArrayList<Integer> mascotasIndex = new ArrayList<>();
     private final ArrayList<String> vacunas = new ArrayList<>();
@@ -37,6 +42,7 @@ public class AddVacunacionActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_add_vacunacion);
 
+        // Relaciono las variables con los elementos del XML
         spMascotas = findViewById(R.id.spMascotas);
         spVacunas = findViewById(R.id.spVacunas);
         etFechaAplicacion = findViewById(R.id.etFechaAplicacion);
@@ -48,8 +54,10 @@ public class AddVacunacionActivity extends AppCompatActivity {
         cargarMascotasEnSpinner();
         cargarVacunasEnSpinner();
 
+        // Abro el calendario cuando el usuario toca la fecha
         etFechaAplicacion.setOnClickListener(v -> mostrarDatePicker());
 
+        // Cada vez que cambia la vacuna, recalculo la próxima dosis
         spVacunas.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(android.widget.AdapterView<?> parent, android.view.View view, int position, long id) {
@@ -61,9 +69,11 @@ public class AddVacunacionActivity extends AppCompatActivity {
             }
         });
 
+        // Evento para guardar la vacunación
         btnGuardarVacuna.setOnClickListener(v -> guardarVacunacion());
     }
 
+    // Este método carga las mascotas registradas en el Spinner
     private void cargarMascotasEnSpinner() {
         mascotasNombres.clear();
         mascotasIndex.clear();
@@ -92,6 +102,7 @@ public class AddVacunacionActivity extends AppCompatActivity {
         spMascotas.setAdapter(adapter);
     }
 
+    // Este método carga la lista base de vacunas
     private void cargarVacunasEnSpinner() {
         vacunas.clear();
         vacunas.add("Rabia (anual)");
@@ -104,6 +115,7 @@ public class AddVacunacionActivity extends AppCompatActivity {
         spVacunas.setAdapter(adapter);
     }
 
+    // Aquí muestro un DatePicker para seleccionar la fecha de aplicación
     private void mostrarDatePicker() {
         Calendar c = Calendar.getInstance();
         int year = c.get(Calendar.YEAR);
@@ -123,6 +135,7 @@ public class AddVacunacionActivity extends AppCompatActivity {
         dialog.show();
     }
 
+    // Este método calcula y muestra la próxima dosis
     private void actualizarProximaDosis() {
         if (fechaAplicacionCal == null) {
             tvProximaDosis.setText("Próxima dosis: -");
@@ -139,11 +152,13 @@ public class AddVacunacionActivity extends AppCompatActivity {
         tvProximaDosis.setText("Próxima dosis: " + sdf.format(proxima.getTime()));
     }
 
+    // Según la vacuna, determino si la siguiente dosis es a 6 o 12 meses
     private int mesesSegunVacuna(String vacuna) {
         if (vacuna.contains("6 meses")) return 6;
         return 12;
     }
 
+    // Aquí guardo la vacuna y además programo el recordatorio exacto
     private void guardarVacunacion() {
         int idxMascota = mascotasIndex.get(spMascotas.getSelectedItemPosition());
         if (idxMascota == -1) {
@@ -161,8 +176,14 @@ public class AddVacunacionActivity extends AppCompatActivity {
             return;
         }
 
+        if (fechaAplicacionCal == null) {
+            tvMensajeVacuna.setText("Selecciona una fecha válida.");
+            return;
+        }
+
         Calendar proxima = (Calendar) fechaAplicacionCal.clone();
         proxima.add(Calendar.MONTH, mesesSegunVacuna(vacuna));
+
         SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
         String proximaDosis = sdf.format(proxima.getTime());
 
@@ -183,18 +204,64 @@ public class AddVacunacionActivity extends AppCompatActivity {
 
             prefs.edit().putString("vacunas_json", arr.toString()).apply();
 
-            // Aquí muestro la notificación real en el celular cuando se registra la vacuna
+            // Aquí muestro la notificación inmediata de confirmación
             NotificationHelper.mostrarNotificacion(
                     this,
                     "Vacuna registrada",
                     "Se registró la vacuna \"" + vacuna + "\" para " + nombreMascota + ". Próxima dosis: " + proximaDosis
             );
 
+            // Aquí programo la alarma exacta para la próxima dosis
+            programarRecordatorioExacto(nombreMascota, vacuna, proximaDosis, proxima);
+
             tvMensajeVacuna.setText("Vacunación guardada ✅");
             finish();
 
         } catch (Exception e) {
             tvMensajeVacuna.setText("Error guardando vacunación.");
+        }
+    }
+
+    // Este método programa una alarma exacta para la próxima dosis
+    private void programarRecordatorioExacto(String nombreMascota, String vacuna, String proximaDosis, Calendar fechaRecordatorio) {
+
+        // Aquí ajusto la hora para que la notificación salga a las 8:00 a. m.
+        fechaRecordatorio.set(Calendar.HOUR_OF_DAY, 8);
+        fechaRecordatorio.set(Calendar.MINUTE, 0);
+        fechaRecordatorio.set(Calendar.SECOND, 0);
+        fechaRecordatorio.set(Calendar.MILLISECOND, 0);
+
+        Intent intent = new Intent(this, VaccineReminderReceiver.class);
+        intent.putExtra("nombreMascota", nombreMascota);
+        intent.putExtra("vacuna", vacuna);
+        intent.putExtra("proximaDosis", proximaDosis);
+
+        // Uso un requestCode único para evitar conflictos entre alarmas
+        int requestCode = (nombreMascota + vacuna + proximaDosis).hashCode();
+
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(
+                this,
+                requestCode,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+
+        AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
+
+        if (alarmManager != null) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                alarmManager.setExactAndAllowWhileIdle(
+                        AlarmManager.RTC_WAKEUP,
+                        fechaRecordatorio.getTimeInMillis(),
+                        pendingIntent
+                );
+            } else {
+                alarmManager.setExact(
+                        AlarmManager.RTC_WAKEUP,
+                        fechaRecordatorio.getTimeInMillis(),
+                        pendingIntent
+                );
+            }
         }
     }
 }
