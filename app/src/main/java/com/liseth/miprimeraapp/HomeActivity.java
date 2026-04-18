@@ -32,15 +32,12 @@ import java.util.concurrent.TimeUnit;
 
 public class HomeActivity extends AppCompatActivity {
 
-    // Aquí declaro los elementos de la interfaz de la pantalla principal
     private TextView tvListaMascotas, tvBadge;
     private ImageView imgCampana;
-    private Button btnNuevaMascota, btnProductos, btnVerMascotas, btnBusqueda;
+    private Button btnNuevaMascota, btnProductos, btnVerMascotas, btnBusqueda, btnMiPerfil;
 
-    // Este lanzador me sirve para pedir el permiso de notificaciones en Android 13 o superior
     private final ActivityResultLauncher<String> requestPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
-                // Por ahora no necesito hacer una acción adicional cuando el usuario responda
             });
 
     @Override
@@ -48,16 +45,10 @@ public class HomeActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
 
-        // Aquí creo el canal de notificaciones para asegurar que las alertas funcionen correctamente
         NotificationHelper.crearCanal(this);
-
-        // Aquí solicito el permiso de notificaciones si el dispositivo lo requiere
         solicitarPermisoNotificaciones();
-
-        // Aquí programo la revisión automática de vacunas en segundo plano con WorkManager
         programarRecordatoriosAutomaticos();
 
-        // Relaciono las variables con los elementos del XML
         tvListaMascotas = findViewById(R.id.tvListaMascotas);
         tvBadge = findViewById(R.id.tvBadge);
         imgCampana = findViewById(R.id.imgCampana);
@@ -66,49 +57,44 @@ public class HomeActivity extends AppCompatActivity {
         btnProductos = findViewById(R.id.btnProductos);
         btnVerMascotas = findViewById(R.id.btnVerMascotas);
         btnBusqueda = findViewById(R.id.btnBusqueda);
+        btnMiPerfil = findViewById(R.id.btnMiPerfil);
 
-        // Botón para registrar una nueva mascota
         btnNuevaMascota.setOnClickListener(v ->
                 startActivity(new Intent(HomeActivity.this, AddPetActivity.class))
         );
 
-        // Botón para ver la lista completa de mascotas registradas
         btnVerMascotas.setOnClickListener(v ->
                 startActivity(new Intent(HomeActivity.this, PetsListActivity.class))
         );
 
-        // Botón para abrir la tienda
         btnProductos.setOnClickListener(v ->
                 startActivity(new Intent(HomeActivity.this, StoreActivity.class))
         );
 
-        // Botón para abrir el mapa de veterinarias cercanas
         btnBusqueda.setOnClickListener(v ->
                 startActivity(new Intent(HomeActivity.this, BusquedaActivity.class))
         );
 
-        // Evento de la campana para abrir la pantalla de notificaciones
+        // Aquí abro la pantalla del perfil del dueño
+        btnMiPerfil.setOnClickListener(v ->
+                startActivity(new Intent(HomeActivity.this, OwnerProfileActivity.class))
+        );
+
         imgCampana.setOnClickListener(v ->
                 startActivity(new Intent(HomeActivity.this, NotificationsActivity.class))
         );
 
-        // Muestro el resumen de mascotas en la pantalla principal
         mostrarMascotasEnHome();
-
-        // Actualizo el número de notificaciones visibles en el badge
         actualizarBadgeNotificaciones();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-
-        // Cada vez que regreso a esta pantalla, actualizo la información visible
         mostrarMascotasEnHome();
         actualizarBadgeNotificaciones();
     }
 
-    // Este método me sirve para pedir el permiso de notificaciones en Android 13 o superior
     private void solicitarPermisoNotificaciones() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
@@ -118,7 +104,6 @@ public class HomeActivity extends AppCompatActivity {
         }
     }
 
-    // Aquí programo una tarea periódica para revisar vacunas automáticamente en segundo plano
     private void programarRecordatoriosAutomaticos() {
         PeriodicWorkRequest reminderWork =
                 new PeriodicWorkRequest.Builder(ReminderWorker.class, 15, TimeUnit.MINUTES)
@@ -131,7 +116,6 @@ public class HomeActivity extends AppCompatActivity {
         );
     }
 
-    // Este método me permite mostrar un resumen de las mascotas registradas en la pantalla principal
     private void mostrarMascotasEnHome() {
         SharedPreferences prefs = getSharedPreferences("mascotas", MODE_PRIVATE);
         String json = prefs.getString("mascotas_json", "[]");
@@ -139,7 +123,6 @@ public class HomeActivity extends AppCompatActivity {
         try {
             JSONArray arr = new JSONArray(json);
 
-            // Si no hay mascotas registradas, muestro un mensaje por defecto
             if (arr.length() == 0) {
                 tvListaMascotas.setText("Aún no tienes mascotas registradas.");
                 return;
@@ -147,7 +130,6 @@ public class HomeActivity extends AppCompatActivity {
 
             StringBuilder sb = new StringBuilder();
 
-            // Recorro cada mascota guardada y construyo el texto de resumen
             for (int i = 0; i < arr.length(); i++) {
                 JSONObject obj = arr.getJSONObject(i);
 
@@ -168,20 +150,13 @@ public class HomeActivity extends AppCompatActivity {
         }
     }
 
-    // Este método calcula cuántas notificaciones activas tengo y actualiza el badge rojo
     private void actualizarBadgeNotificaciones() {
         int totalNotificaciones = 0;
 
-        // Cuento las notificaciones relacionadas con vacunas
         totalNotificaciones += contarNotificacionesVacunas();
-
-        // Agrego promociones de ejemplo
         totalNotificaciones += contarPromociones();
-
-        // Agrego una cita de ejemplo
         totalNotificaciones += contarCitasEjemplo();
 
-        // Si hay notificaciones, muestro el badge y animo la campana
         if (totalNotificaciones > 0) {
             tvBadge.setText(String.valueOf(totalNotificaciones));
             tvBadge.setVisibility(View.VISIBLE);
@@ -192,13 +167,11 @@ public class HomeActivity extends AppCompatActivity {
         }
     }
 
-    // Este método aplica la animación de campana cuando existen notificaciones
     private void animarCampana() {
         Animation animacion = AnimationUtils.loadAnimation(this, R.anim.campana_anim);
         imgCampana.startAnimation(animacion);
     }
 
-    // Aquí reviso las vacunas guardadas para saber si generan notificación en el badge
     private int contarNotificacionesVacunas() {
         int total = 0;
 
@@ -234,7 +207,6 @@ public class HomeActivity extends AppCompatActivity {
                 long diffMs = prox.getTimeInMillis() - hoy.getTimeInMillis();
                 long diffDays = diffMs / (1000L * 60 * 60 * 24);
 
-                // Si la vacuna está vencida o vence dentro de 7 días, la cuento como notificación
                 if (diffDays < 0 || diffDays <= 7) {
                     total++;
                 }
@@ -246,12 +218,10 @@ public class HomeActivity extends AppCompatActivity {
         return total;
     }
 
-    // Aquí defino promociones de ejemplo para mostrar en el contador
     private int contarPromociones() {
         return 2;
     }
 
-    // Aquí defino una cita de ejemplo para mostrar en el contador
     private int contarCitasEjemplo() {
         return 1;
     }

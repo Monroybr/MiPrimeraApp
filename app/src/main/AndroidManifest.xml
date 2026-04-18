@@ -45,6 +45,20 @@
 
         <!-- Activities de la aplicación -->
         <activity
+            android:name=".OwnerProfileActivity"
+            android:exported="false" />
+        <receiver
+            android:name=".CitaReminderReceiver"
+            android:exported="false" />
+
+        <activity
+            android:name=".AddCitaActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".CitasListActivity"
+            android:exported="false" />
+        <activity
             android:name=".BusquedaActivity"
             android:exported="false" />
 

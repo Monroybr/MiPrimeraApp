@@ -1,16 +1,37 @@
 package com.liseth.miprimeraapp;
 
 public class Pet {
+
+    // Aquí guardo toda la información principal de la mascota
     public String nombre;
-    public String fechaNacimiento; // dd/mm/aaaa
-    public String edadTexto;       // "2 años, 3 meses"
+    public String fechaNacimiento;
+    public String edadTexto;
     public String raza;
     public String caracteristicas;
     public String vacunas;
     public String historial;
 
-    public Pet(String nombre, String fechaNacimiento, String edadTexto, String raza,
-               String caracteristicas, String vacunas, String historial) {
+    // Nuevos campos del perfil completo
+    public String sexo;
+    public String peso;
+    public String color;
+    public String alergias;
+    public String observaciones;
+
+    // Constructor completo de la mascota
+    public Pet(String nombre,
+               String fechaNacimiento,
+               String edadTexto,
+               String raza,
+               String caracteristicas,
+               String vacunas,
+               String historial,
+               String sexo,
+               String peso,
+               String color,
+               String alergias,
+               String observaciones) {
+
         this.nombre = nombre;
         this.fechaNacimiento = fechaNacimiento;
         this.edadTexto = edadTexto;
@@ -18,5 +39,10 @@ public class Pet {
         this.caracteristicas = caracteristicas;
         this.vacunas = vacunas;
         this.historial = historial;
+        this.sexo = sexo;
+        this.peso = peso;
+        this.color = color;
+        this.alergias = alergias;
+        this.observaciones = observaciones;
     }
 }

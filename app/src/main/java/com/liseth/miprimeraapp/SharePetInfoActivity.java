@@ -33,8 +33,19 @@ public class SharePetInfoActivity extends AppCompatActivity {
     private int petIndex = -1;
     private String nombreMascota = "Mascota";
     private String edadMascota = "-";
+    private String razaMascota = "-";
+    private String sexoMascota = "-";
+    private String pesoMascota = "-";
+    private String colorMascota = "-";
+    private String alergiasMascota = "-";
     private String caracteristicasMascota = "-";
+    private String observacionesMascota = "-";
+
+    // Variables del dueño
     private String nombreDueno = "-";
+    private String telefonoDueno = "-";
+    private String correoDueno = "-";
+    private String direccionDueno = "-";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,7 +80,7 @@ public class SharePetInfoActivity extends AppCompatActivity {
         btnGenerarCompartirPdf.setOnClickListener(v -> generarYCompartirPdf());
     }
 
-    // Este metodo lo uso para obtener los datos de la mascota desde SharedPreferences
+    // Este método lo uso para obtener los datos completos de la mascota desde SharedPreferences
     private void cargarDatosMascota(int index) {
         SharedPreferences prefs = getSharedPreferences("mascotas", MODE_PRIVATE);
         String json = prefs.getString("mascotas_json", "[]");
@@ -80,20 +91,21 @@ public class SharePetInfoActivity extends AppCompatActivity {
             if (index >= 0 && index < arr.length()) {
                 JSONObject obj = arr.getJSONObject(index);
 
-                nombreMascota = obj.optString("nombre", "Mascota");
-                edadMascota = obj.optString("edadTexto", "-");
-                caracteristicasMascota = obj.optString("caracteristicas", "-");
-
-                // Valido si las características están vacías
-                if (caracteristicasMascota == null || caracteristicasMascota.trim().isEmpty()) {
-                    caracteristicasMascota = "-";
-                }
+                nombreMascota = obtenerValorSeguro(obj.optString("nombre", "Mascota"));
+                edadMascota = obtenerValorSeguro(obj.optString("edadTexto", "-"));
+                razaMascota = obtenerValorSeguro(obj.optString("raza", "-"));
+                sexoMascota = obtenerValorSeguro(obj.optString("sexo", "-"));
+                pesoMascota = obtenerValorSeguro(obj.optString("peso", "-"));
+                colorMascota = obtenerValorSeguro(obj.optString("color", "-"));
+                alergiasMascota = obtenerValorSeguro(obj.optString("alergias", "-"));
+                caracteristicasMascota = obtenerValorSeguro(obj.optString("caracteristicas", "-"));
+                observacionesMascota = obtenerValorSeguro(obj.optString("observaciones", "-"));
             }
         } catch (Exception ignored) {
         }
     }
 
-    // Aquí obtengo el nombre del dueño desde el registro del usuario
+    // Aquí obtengo todos los datos del dueño desde el registro del usuario
     private void cargarDatosDueno() {
         SharedPreferences prefs = getSharedPreferences("usuarios", MODE_PRIVATE);
 
@@ -101,13 +113,25 @@ public class SharePetInfoActivity extends AppCompatActivity {
         String apellidos = prefs.getString("apellidos", "");
 
         nombreDueno = (nombres + " " + apellidos).trim();
+        telefonoDueno = prefs.getString("telefono", "-");
+        correoDueno = prefs.getString("correo", "-");
+        direccionDueno = prefs.getString("direccion", "-");
 
-        if (nombreDueno.isEmpty()) {
-            nombreDueno = "No registrado";
-        }
+        nombreDueno = nombreDueno.isEmpty() ? "No registrado" : nombreDueno;
+        telefonoDueno = obtenerValorSeguro(telefonoDueno);
+        correoDueno = obtenerValorSeguro(correoDueno);
+        direccionDueno = obtenerValorSeguro(direccionDueno);
     }
 
-    // Este es el metodo principal donde genero el PDF
+    // Este método me ayuda a evitar textos vacíos en el PDF
+    private String obtenerValorSeguro(String valor) {
+        if (valor == null || valor.trim().isEmpty()) {
+            return "-";
+        }
+        return valor.trim();
+    }
+
+    // Este es el método principal donde genero el PDF
     private void generarYCompartirPdf() {
 
         // Verifico que el usuario haya seleccionado al menos una opción
@@ -147,15 +171,15 @@ public class SharePetInfoActivity extends AppCompatActivity {
         // Encabezado del documento
         page.getCanvas().drawText("REPORTE DE LA MASCOTA", x, y, titulo);
         y += 25;
-        page.getCanvas().drawText("Fecha: " + fecha, x, y, texto);
+        page.getCanvas().drawText("Fecha de generación: " + fecha, x, y, texto);
         y += 20;
 
         // Línea divisora
         page.getCanvas().drawLine(x, y, 550, y, linea);
         y += 25;
 
-        // Sección de datos generales
-        page.getCanvas().drawText("DATOS GENERALES", x, y, subtitulo);
+        // Sección de datos de la mascota
+        page.getCanvas().drawText("DATOS DE LA MASCOTA", x, y, subtitulo);
         y += espacio;
 
         page.getCanvas().drawText("Nombre: " + nombreMascota, x, y, texto);
@@ -164,10 +188,49 @@ public class SharePetInfoActivity extends AppCompatActivity {
         page.getCanvas().drawText("Edad: " + edadMascota, x, y, texto);
         y += espacio;
 
+        page.getCanvas().drawText("Raza: " + razaMascota, x, y, texto);
+        y += espacio;
+
+        page.getCanvas().drawText("Sexo: " + sexoMascota, x, y, texto);
+        y += espacio;
+
+        page.getCanvas().drawText("Peso: " + (pesoMascota.equals("-") ? "-" : pesoMascota + " kg"), x, y, texto);
+        y += espacio;
+
+        page.getCanvas().drawText("Color: " + colorMascota, x, y, texto);
+        y += espacio;
+
+        page.getCanvas().drawText("Alergias: " + alergiasMascota, x, y, texto);
+        y += espacio;
+
         page.getCanvas().drawText("Características: " + caracteristicasMascota, x, y, texto);
         y += espacio;
 
-        page.getCanvas().drawText("Dueño: " + nombreDueno, x, y, texto);
+        page.getCanvas().drawText("Observaciones: " + observacionesMascota, x, y, texto);
+        y += 25;
+
+        // Línea divisora
+        page.getCanvas().drawLine(x, y, 550, y, linea);
+        y += 25;
+
+        // Sección de datos del dueño
+        page.getCanvas().drawText("DATOS DEL DUEÑO", x, y, subtitulo);
+        y += espacio;
+
+        page.getCanvas().drawText("Nombre: " + nombreDueno, x, y, texto);
+        y += espacio;
+
+        page.getCanvas().drawText("Teléfono: " + telefonoDueno, x, y, texto);
+        y += espacio;
+
+        page.getCanvas().drawText("Correo: " + correoDueno, x, y, texto);
+        y += espacio;
+
+        page.getCanvas().drawText("Dirección: " + direccionDueno, x, y, texto);
+        y += 25;
+
+        // Línea divisora
+        page.getCanvas().drawLine(x, y, 550, y, linea);
         y += 25;
 
         // Sección de vacunas
@@ -213,11 +276,12 @@ public class SharePetInfoActivity extends AppCompatActivity {
         }
     }
 
-    // Metodo para escribir las vacunas en el PDF
+    // Método para escribir las vacunas en el PDF
     private int escribirVacunas(PdfDocument.Page page, int x, int y, int espacio, Paint paint) {
 
         SharedPreferences prefs = getSharedPreferences("vacunas", MODE_PRIVATE);
         String json = prefs.getString("vacunas_json", "[]");
+        boolean encontroVacunas = false;
 
         try {
             JSONArray arr = new JSONArray(json);
@@ -227,20 +291,39 @@ public class SharePetInfoActivity extends AppCompatActivity {
 
                 if (obj.optInt("pet_index", -1) != petIndex) continue;
 
-                page.getCanvas().drawText("• " + obj.optString("vacuna", "-"), x, y, paint);
+                encontroVacunas = true;
+
+                String vacuna = obj.optString("vacuna", "-");
+                String fechaAplicacion = obj.optString("fechaAplicacion", "-");
+                String proximaDosis = obj.optString("proximaDosis", "-");
+
+                page.getCanvas().drawText("• Vacuna: " + vacuna, x, y, paint);
+                y += espacio;
+
+                page.getCanvas().drawText("  Fecha aplicación: " + fechaAplicacion, x + 10, y, paint);
+                y += espacio;
+
+                page.getCanvas().drawText("  Próxima dosis: " + proximaDosis, x + 10, y, paint);
                 y += espacio;
             }
 
-        } catch (Exception ignored) {}
+            if (!encontroVacunas) {
+                page.getCanvas().drawText("No hay vacunas registradas.", x, y, paint);
+                y += espacio;
+            }
+
+        } catch (Exception ignored) {
+        }
 
         return y;
     }
 
-    // Metodo para escribir el historial en el PDF
+    // Método para escribir el historial en el PDF
     private int escribirHistorial(PdfDocument.Page page, int x, int y, int espacio, Paint paint) {
 
         SharedPreferences prefs = getSharedPreferences("historial", MODE_PRIVATE);
         String json = prefs.getString("historial_json", "[]");
+        boolean encontroHistorial = false;
 
         try {
             JSONArray arr = new JSONArray(json);
@@ -250,11 +333,33 @@ public class SharePetInfoActivity extends AppCompatActivity {
 
                 if (obj.optInt("pet_index", -1) != petIndex) continue;
 
-                page.getCanvas().drawText("• " + obj.optString("fechaRegistro", "-"), x, y, paint);
+                encontroHistorial = true;
+
+                String fechaRegistro = obj.optString("fechaRegistro", "-");
+                String enfermedades = obj.optString("enfermedades", "-");
+                String procedimientos = obj.optString("procedimientos", "-");
+                String medicacion = obj.optString("medicacion", "-");
+
+                page.getCanvas().drawText("• Fecha: " + fechaRegistro, x, y, paint);
+                y += espacio;
+
+                page.getCanvas().drawText("  Enfermedades: " + enfermedades, x + 10, y, paint);
+                y += espacio;
+
+                page.getCanvas().drawText("  Procedimientos: " + procedimientos, x + 10, y, paint);
+                y += espacio;
+
+                page.getCanvas().drawText("  Medicación: " + medicacion, x + 10, y, paint);
                 y += espacio;
             }
 
-        } catch (Exception ignored) {}
+            if (!encontroHistorial) {
+                page.getCanvas().drawText("No hay historial médico registrado.", x, y, paint);
+                y += espacio;
+            }
+
+        } catch (Exception ignored) {
+        }
 
         return y;
     }

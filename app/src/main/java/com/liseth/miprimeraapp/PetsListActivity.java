@@ -46,6 +46,7 @@ public class PetsListActivity extends AppCompatActivity {
         }));
     }
 
+    // Aquí cargo la información de todas las mascotas guardadas
     private ArrayList<Pet> cargarMascotas() {
         ArrayList<Pet> lista = new ArrayList<>();
 
@@ -66,9 +67,30 @@ public class PetsListActivity extends AppCompatActivity {
                 String vacunas = obj.optString("vacunas", "");
                 String historial = obj.optString("historial", "");
 
-                lista.add(new Pet(nombre, fecha, edad, raza, carac, vacunas, historial));
+                // Nuevos campos del perfil completo
+                String sexo = obj.optString("sexo", "");
+                String peso = obj.optString("peso", "");
+                String color = obj.optString("color", "");
+                String alergias = obj.optString("alergias", "");
+                String observaciones = obj.optString("observaciones", "");
+
+                lista.add(new Pet(
+                        nombre,
+                        fecha,
+                        edad,
+                        raza,
+                        carac,
+                        vacunas,
+                        historial,
+                        sexo,
+                        peso,
+                        color,
+                        alergias,
+                        observaciones
+                ));
             }
-        } catch (Exception ignored) { }
+        } catch (Exception ignored) {
+        }
 
         return lista;
     }

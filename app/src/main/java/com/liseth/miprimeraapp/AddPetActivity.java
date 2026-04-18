@@ -16,12 +16,16 @@ import java.util.Calendar;
 
 public class AddPetActivity extends AppCompatActivity {
 
-    private EditText etNombreMascota, etFechaNacimientoMascota, etRaza, etCaracteristicas, etVacunas, etHistorialMedico;
+    // Aquí declaro los campos del formulario de registro de mascota
+    private EditText etNombreMascota, etFechaNacimientoMascota, etRaza, etCaracteristicas,
+            etVacunas, etHistorialMedico, etSexo, etPeso, etColor, etAlergias, etObservaciones;
+
     private TextView tvEdad, tvMensajeAddPet;
     private Button btnGuardarMascota;
 
+    // Variables para guardar la fecha seleccionada y calcular la edad
     private int birthYear = -1;
-    private int birthMonth = -1; // 0-11
+    private int birthMonth = -1;
     private int birthDay = -1;
 
     @Override
@@ -29,6 +33,7 @@ public class AddPetActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_add_pet);
 
+        // Aquí relaciono las variables con los elementos del XML
         etNombreMascota = findViewById(R.id.etNombreMascota);
         etFechaNacimientoMascota = findViewById(R.id.etFechaNacimientoMascota);
         tvEdad = findViewById(R.id.tvEdad);
@@ -36,13 +41,24 @@ public class AddPetActivity extends AppCompatActivity {
         etCaracteristicas = findViewById(R.id.etCaracteristicas);
         etVacunas = findViewById(R.id.etVacunas);
         etHistorialMedico = findViewById(R.id.etHistorialMedico);
+
+        etSexo = findViewById(R.id.etSexo);
+        etPeso = findViewById(R.id.etPeso);
+        etColor = findViewById(R.id.etColor);
+        etAlergias = findViewById(R.id.etAlergias);
+        etObservaciones = findViewById(R.id.etObservaciones);
+
         btnGuardarMascota = findViewById(R.id.btnGuardarMascota);
         tvMensajeAddPet = findViewById(R.id.tvMensajeAddPet);
 
+        // Aquí abro el calendario al tocar el campo de fecha
         etFechaNacimientoMascota.setOnClickListener(v -> mostrarDatePicker());
+
+        // Aquí guardo la mascota cuando se presiona el botón
         btnGuardarMascota.setOnClickListener(v -> guardarMascota());
     }
 
+    // Este método muestra el calendario para seleccionar la fecha de nacimiento
     private void mostrarDatePicker() {
         Calendar c = Calendar.getInstance();
         int year = c.get(Calendar.YEAR);
@@ -63,6 +79,7 @@ public class AddPetActivity extends AppCompatActivity {
         dialog.show();
     }
 
+    // Este método calcula la edad de la mascota con base en la fecha seleccionada
     private String calcularEdadTexto(int y, int m, int d) {
         Calendar hoy = Calendar.getInstance();
         Calendar nacimiento = Calendar.getInstance();
@@ -75,6 +92,7 @@ public class AddPetActivity extends AppCompatActivity {
         int days = hoy.get(Calendar.DAY_OF_MONTH) - nacimiento.get(Calendar.DAY_OF_MONTH);
 
         if (days < 0) months -= 1;
+
         if (months < 0) {
             years -= 1;
             months += 12;
@@ -82,9 +100,11 @@ public class AddPetActivity extends AppCompatActivity {
 
         if (years < 0) return "-";
         if (years == 0) return months + " meses";
+
         return years + " años, " + months + " meses";
     }
 
+    // Este método guarda toda la información de la mascota en SharedPreferences
     private void guardarMascota() {
         String nombre = etNombreMascota.getText().toString().trim();
         String fecha = etFechaNacimientoMascota.getText().toString().trim();
@@ -93,6 +113,13 @@ public class AddPetActivity extends AppCompatActivity {
         String vacunas = etVacunas.getText().toString().trim();
         String historial = etHistorialMedico.getText().toString().trim();
 
+        String sexo = etSexo.getText().toString().trim();
+        String peso = etPeso.getText().toString().trim();
+        String color = etColor.getText().toString().trim();
+        String alergias = etAlergias.getText().toString().trim();
+        String observaciones = etObservaciones.getText().toString().trim();
+
+        // Aquí valido los campos mínimos obligatorios
         if (nombre.isEmpty() || fecha.isEmpty() || raza.isEmpty()) {
             tvMensajeAddPet.setText("Completa al menos: Nombre, Fecha de nacimiento y Raza.");
             return;
@@ -114,6 +141,13 @@ public class AddPetActivity extends AppCompatActivity {
             obj.put("caracteristicas", caracteristicas);
             obj.put("vacunas", vacunas);
             obj.put("historial", historial);
+
+            // Nuevos datos del perfil completo
+            obj.put("sexo", sexo);
+            obj.put("peso", peso);
+            obj.put("color", color);
+            obj.put("alergias", alergias);
+            obj.put("observaciones", observaciones);
 
             arr.put(obj);
 

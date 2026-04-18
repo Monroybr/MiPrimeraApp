@@ -60,9 +60,53 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:hint="Raza"
-            android:inputType="textPersonName"
             android:layout_marginTop="12dp"
             app:layout_constraintTop_toBottomOf="@id/tvEdad"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <!-- Nuevos campos del perfil completo -->
+        <EditText
+            android:id="@+id/etSexo"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:hint="Sexo"
+            android:layout_marginTop="12dp"
+            app:layout_constraintTop_toBottomOf="@id/etRaza"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <EditText
+            android:id="@+id/etPeso"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:hint="Peso (kg)"
+            android:inputType="numberDecimal"
+            android:layout_marginTop="12dp"
+            app:layout_constraintTop_toBottomOf="@id/etSexo"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <EditText
+            android:id="@+id/etColor"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:hint="Color"
+            android:layout_marginTop="12dp"
+            app:layout_constraintTop_toBottomOf="@id/etPeso"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <EditText
+            android:id="@+id/etAlergias"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:hint="Alergias"
+            android:minLines="2"
+            android:gravity="top|start"
+            android:inputType="textMultiLine"
+            android:layout_marginTop="12dp"
+            app:layout_constraintTop_toBottomOf="@id/etColor"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent" />
 
@@ -75,7 +119,7 @@
             android:minLines="3"
             android:gravity="top|start"
             android:layout_marginTop="12dp"
-            app:layout_constraintTop_toBottomOf="@id/etRaza"
+            app:layout_constraintTop_toBottomOf="@id/etAlergias"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent" />
 
@@ -96,12 +140,25 @@
             android:id="@+id/etHistorialMedico"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:hint="Historial médico (alergias, cirugías, controles, etc.)"
+            android:hint="Historial médico"
             android:inputType="textMultiLine"
             android:minLines="4"
             android:gravity="top|start"
             android:layout_marginTop="12dp"
             app:layout_constraintTop_toBottomOf="@id/etVacunas"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <EditText
+            android:id="@+id/etObservaciones"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:hint="Observaciones"
+            android:inputType="textMultiLine"
+            android:minLines="3"
+            android:gravity="top|start"
+            android:layout_marginTop="12dp"
+            app:layout_constraintTop_toBottomOf="@id/etHistorialMedico"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent" />
 
@@ -111,7 +168,7 @@
             android:layout_height="wrap_content"
             android:text="Guardar mascota"
             android:layout_marginTop="16dp"
-            app:layout_constraintTop_toBottomOf="@id/etHistorialMedico"
+            app:layout_constraintTop_toBottomOf="@id/etObservaciones"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent" />
 
