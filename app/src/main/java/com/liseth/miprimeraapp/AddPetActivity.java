@@ -1,10 +1,15 @@
 package com.liseth.miprimeraapp;
 
 import android.app.DatePickerDialog;
+import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.net.Uri;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -21,7 +26,15 @@ public class AddPetActivity extends AppCompatActivity {
             etVacunas, etHistorialMedico, etSexo, etPeso, etColor, etAlergias, etObservaciones;
 
     private TextView tvEdad, tvMensajeAddPet;
-    private Button btnGuardarMascota;
+    private Button btnGuardarMascota, btnSeleccionarImagen, btnTomarFoto;
+    private ImageView imgMascota;
+
+    // Aquí guardo la URI de la imagen seleccionada
+    private Uri imagenMascotaUri = null;
+
+    // Códigos para identificar selección de imagen y cámara
+    private static final int REQUEST_IMAGE_PICK = 1001;
+    private static final int REQUEST_IMAGE_CAMERA = 1002;
 
     // Variables para guardar la fecha seleccionada y calcular la edad
     private int birthYear = -1;
@@ -48,17 +61,86 @@ public class AddPetActivity extends AppCompatActivity {
         etAlergias = findViewById(R.id.etAlergias);
         etObservaciones = findViewById(R.id.etObservaciones);
 
+        imgMascota = findViewById(R.id.imgMascota);
+        btnSeleccionarImagen = findViewById(R.id.btnSeleccionarImagen);
+        btnTomarFoto = findViewById(R.id.btnTomarFoto);
+
         btnGuardarMascota = findViewById(R.id.btnGuardarMascota);
         tvMensajeAddPet = findViewById(R.id.tvMensajeAddPet);
 
         // Aquí abro el calendario al tocar el campo de fecha
         etFechaNacimientoMascota.setOnClickListener(v -> mostrarDatePicker());
 
+        // Aquí abro el selector de imágenes
+        btnSeleccionarImagen.setOnClickListener(v -> abrirGaleria());
+
+        // Aquí abro la cámara
+        btnTomarFoto.setOnClickListener(v -> abrirCamara());
+
         // Aquí guardo la mascota cuando se presiona el botón
         btnGuardarMascota.setOnClickListener(v -> guardarMascota());
     }
 
-    // Este método muestra el calendario para seleccionar la fecha de nacimiento
+    // Este metodo abre la galería para seleccionar una foto
+    private void abrirGaleria() {
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        intent.setType("image/*");
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        intent.addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
+        startActivityForResult(intent, REQUEST_IMAGE_PICK);
+    }
+
+    // Este metodo abre la cámara
+    private void abrirCamara() {
+        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        startActivityForResult(intent, REQUEST_IMAGE_CAMERA);
+    }
+
+    // Aquí recibo la imagen seleccionada o la foto tomada
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        try {
+            if (requestCode == REQUEST_IMAGE_PICK && resultCode == RESULT_OK && data != null && data.getData() != null) {
+                imagenMascotaUri = data.getData();
+
+                final int takeFlags = data.getFlags()
+                        & (Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+
+                try {
+                    getContentResolver().takePersistableUriPermission(imagenMascotaUri, takeFlags);
+                } catch (Exception ignored) {
+                }
+
+                imgMascota.setImageURI(imagenMascotaUri);
+            }
+
+            if (requestCode == REQUEST_IMAGE_CAMERA && resultCode == RESULT_OK && data != null) {
+                Bitmap foto = (Bitmap) data.getExtras().get("data");
+
+                if (foto != null) {
+                    imgMascota.setImageBitmap(foto);
+
+                    String path = MediaStore.Images.Media.insertImage(
+                            getContentResolver(),
+                            foto,
+                            "Mascota_" + System.currentTimeMillis(),
+                            null
+                    );
+
+                    if (path != null) {
+                        imagenMascotaUri = Uri.parse(path);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            tvMensajeAddPet.setText("Error cargando la imagen.");
+        }
+    }
+
+    // Este metodo muestra el calendario para seleccionar la fecha de nacimiento
     private void mostrarDatePicker() {
         Calendar c = Calendar.getInstance();
         int year = c.get(Calendar.YEAR);
@@ -79,7 +161,7 @@ public class AddPetActivity extends AppCompatActivity {
         dialog.show();
     }
 
-    // Este método calcula la edad de la mascota con base en la fecha seleccionada
+    // Este metodo calcula la edad de la mascota con base en la fecha seleccionada
     private String calcularEdadTexto(int y, int m, int d) {
         Calendar hoy = Calendar.getInstance();
         Calendar nacimiento = Calendar.getInstance();
@@ -104,7 +186,7 @@ public class AddPetActivity extends AppCompatActivity {
         return years + " años, " + months + " meses";
     }
 
-    // Este método guarda toda la información de la mascota en SharedPreferences
+    // Este metodo guarda toda la información de la mascota en SharedPreferences
     private void guardarMascota() {
         String nombre = etNombreMascota.getText().toString().trim();
         String fecha = etFechaNacimientoMascota.getText().toString().trim();
@@ -148,6 +230,9 @@ public class AddPetActivity extends AppCompatActivity {
             obj.put("color", color);
             obj.put("alergias", alergias);
             obj.put("observaciones", observaciones);
+
+            // Aquí guardo la URI de la foto como texto
+            obj.put("imagenUri", imagenMascotaUri != null ? imagenMascotaUri.toString() : "");
 
             arr.put(obj);
 

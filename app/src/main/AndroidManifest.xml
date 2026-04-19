@@ -11,6 +11,9 @@
     <!-- Permiso para notificaciones en Android 13 o superior -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- Permiso para usar la cámara -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -43,12 +46,13 @@
             android:name=".VaccineReminderReceiver"
             android:exported="false" />
 
+        <receiver
+            android:name=".CitaReminderReceiver"
+            android:exported="false" />
+
         <!-- Activities de la aplicación -->
         <activity
             android:name=".OwnerProfileActivity"
-            android:exported="false" />
-        <receiver
-            android:name=".CitaReminderReceiver"
             android:exported="false" />
 
         <activity
@@ -58,6 +62,7 @@
         <activity
             android:name=".CitasListActivity"
             android:exported="false" />
+
         <activity
             android:name=".BusquedaActivity"
             android:exported="false" />

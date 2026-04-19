@@ -18,6 +18,9 @@ public class Pet {
     public String alergias;
     public String observaciones;
 
+    // Aquí guardo la URI de la imagen de la mascota
+    public String imagenUri;
+
     // Constructor completo de la mascota
     public Pet(String nombre,
                String fechaNacimiento,
@@ -30,7 +33,8 @@ public class Pet {
                String peso,
                String color,
                String alergias,
-               String observaciones) {
+               String observaciones,
+               String imagenUri) {
 
         this.nombre = nombre;
         this.fechaNacimiento = fechaNacimiento;
@@ -44,5 +48,6 @@ public class Pet {
         this.color = color;
         this.alergias = alergias;
         this.observaciones = observaciones;
+        this.imagenUri = imagenUri;
     }
 }

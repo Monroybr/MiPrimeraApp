@@ -74,6 +74,9 @@ public class PetsListActivity extends AppCompatActivity {
                 String alergias = obj.optString("alergias", "");
                 String observaciones = obj.optString("observaciones", "");
 
+                // Aquí recupero la URI de la foto
+                String imagenUri = obj.optString("imagenUri", "");
+
                 lista.add(new Pet(
                         nombre,
                         fecha,
@@ -86,7 +89,8 @@ public class PetsListActivity extends AppCompatActivity {
                         peso,
                         color,
                         alergias,
-                        observaciones
+                        observaciones,
+                        imagenUri
                 ));
             }
         } catch (Exception ignored) {

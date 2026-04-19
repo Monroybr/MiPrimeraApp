@@ -2,8 +2,11 @@ package com.liseth.miprimeraapp;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.os.Bundle;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -11,12 +14,17 @@ import androidx.appcompat.app.AppCompatActivity;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.io.InputStream;
+
 public class PetDetailActivity extends AppCompatActivity {
 
     // Aquí declaro los campos que mostrarán la información de la mascota
     private TextView tvNombreDetalle, tvInfoBasicaDetalle, tvCaracteristicasDetalle,
             tvVacunasDetalle, tvHistorialDetalle,
             tvSexoDetalle, tvPesoDetalle, tvColorDetalle, tvAlergiasDetalle, tvObservacionesDetalle;
+
+    // Aquí declaro la imagen de la mascota
+    private ImageView imgMascotaDetalle;
 
     private Button btnAgregarVacuna, btnCarnetVacunas, btnAgregarHistorial, btnVerHistorial, btnCompartirInfo;
 
@@ -28,6 +36,8 @@ public class PetDetailActivity extends AppCompatActivity {
         setContentView(R.layout.activity_pet_detail);
 
         // Relaciono variables con elementos del XML
+        imgMascotaDetalle = findViewById(R.id.imgMascotaDetalle);
+
         tvNombreDetalle = findViewById(R.id.tvNombreDetalle);
         tvInfoBasicaDetalle = findViewById(R.id.tvInfoBasicaDetalle);
         tvCaracteristicasDetalle = findViewById(R.id.tvCaracteristicasDetalle);
@@ -129,6 +139,9 @@ public class PetDetailActivity extends AppCompatActivity {
             String alergias = obj.optString("alergias", "");
             String observaciones = obj.optString("observaciones", "");
 
+            // Aquí recupero la URI de la imagen
+            String imagenUri = obj.optString("imagenUri", "");
+
             tvNombreDetalle.setText(nombre.isEmpty() ? "Sin nombre" : nombre);
             tvInfoBasicaDetalle.setText(raza + " • " + fecha + " • " + edad);
             tvCaracteristicasDetalle.setText("Características: " + (carac.isEmpty() ? "-" : carac));
@@ -139,6 +152,19 @@ public class PetDetailActivity extends AppCompatActivity {
             tvColorDetalle.setText("Color: " + (color.isEmpty() ? "-" : color));
             tvAlergiasDetalle.setText("Alergias: " + (alergias.isEmpty() ? "-" : alergias));
             tvObservacionesDetalle.setText("Observaciones: " + (observaciones.isEmpty() ? "-" : observaciones));
+
+            // Aquí muestro la foto si existe
+            if (!imagenUri.isEmpty()) {
+                try {
+                    Uri uri = Uri.parse(imagenUri);
+                    InputStream inputStream = getContentResolver().openInputStream(uri);
+                    imgMascotaDetalle.setImageBitmap(BitmapFactory.decodeStream(inputStream));
+                } catch (Exception ignored) {
+                    imgMascotaDetalle.setImageResource(R.mipmap.ic_launcher);
+                }
+            } else {
+                imgMascotaDetalle.setImageResource(R.mipmap.ic_launcher);
+            }
 
             int totalVacunas = contarVacunasDeMascota(index);
             int totalHistorial = contarHistorialDeMascota(index);
@@ -157,6 +183,7 @@ public class PetDetailActivity extends AppCompatActivity {
             tvObservacionesDetalle.setText("Observaciones: -");
             tvVacunasDetalle.setText("Vacunas registradas: 0");
             tvHistorialDetalle.setText("Registros clínicos: 0");
+            imgMascotaDetalle.setImageResource(R.mipmap.ic_launcher);
         }
     }
 
@@ -208,7 +235,7 @@ public class PetDetailActivity extends AppCompatActivity {
         return total;
     }
 
-    // Este metodo muestra un estado por defecto si la mascota no existe
+    // Este método muestra un estado por defecto si la mascota no existe
     private void mostrarMascotaNoEncontrada() {
         tvNombreDetalle.setText("Mascota no encontrada");
         tvInfoBasicaDetalle.setText("-");
@@ -220,5 +247,6 @@ public class PetDetailActivity extends AppCompatActivity {
         tvObservacionesDetalle.setText("Observaciones: -");
         tvVacunasDetalle.setText("Vacunas registradas: 0");
         tvHistorialDetalle.setText("Registros clínicos: 0");
+        imgMascotaDetalle.setImageResource(R.mipmap.ic_launcher);
     }
 }

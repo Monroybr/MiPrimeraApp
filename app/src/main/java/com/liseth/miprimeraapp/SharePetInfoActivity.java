@@ -2,6 +2,8 @@ package com.liseth.miprimeraapp;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Paint;
 import android.graphics.pdf.PdfDocument;
 import android.net.Uri;
@@ -18,18 +20,17 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
 public class SharePetInfoActivity extends AppCompatActivity {
 
-    // Aquí declaro los componentes de la interfaz que voy a usar
     private TextView tvNombreMascotaShare, tvMensajeShare;
     private CheckBox cbVacunas, cbHistorial;
     private Button btnGenerarCompartirPdf;
 
-    // Variables donde voy a guardar la información de la mascota
     private int petIndex = -1;
     private String nombreMascota = "Mascota";
     private String edadMascota = "-";
@@ -40,8 +41,8 @@ public class SharePetInfoActivity extends AppCompatActivity {
     private String alergiasMascota = "-";
     private String caracteristicasMascota = "-";
     private String observacionesMascota = "-";
+    private String imagenMascotaUri = "";
 
-    // Variables del dueño
     private String nombreDueno = "-";
     private String telefonoDueno = "-";
     private String correoDueno = "-";
@@ -52,35 +53,28 @@ public class SharePetInfoActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_share_pet_info);
 
-        // Aquí enlazo los elementos del XML con el código
         tvNombreMascotaShare = findViewById(R.id.tvNombreMascotaShare);
         tvMensajeShare = findViewById(R.id.tvMensajeShare);
         cbVacunas = findViewById(R.id.cbVacunas);
         cbHistorial = findViewById(R.id.cbHistorial);
         btnGenerarCompartirPdf = findViewById(R.id.btnGenerarCompartirPdf);
 
-        // Obtengo el índice de la mascota que viene desde otra pantalla
         petIndex = getIntent().getIntExtra("pet_index", -1);
 
-        // Valido que el índice exista
         if (petIndex == -1) {
             tvMensajeShare.setText("No se pudo identificar la mascota.");
             btnGenerarCompartirPdf.setEnabled(false);
             return;
         }
 
-        // Cargo los datos de la mascota y del dueño
         cargarDatosMascota(petIndex);
         cargarDatosDueno();
 
-        // Muestro el nombre de la mascota en pantalla
         tvNombreMascotaShare.setText("Mascota: " + nombreMascota);
 
-        // Evento del botón para generar el PDF
         btnGenerarCompartirPdf.setOnClickListener(v -> generarYCompartirPdf());
     }
 
-    // Este método lo uso para obtener los datos completos de la mascota desde SharedPreferences
     private void cargarDatosMascota(int index) {
         SharedPreferences prefs = getSharedPreferences("mascotas", MODE_PRIVATE);
         String json = prefs.getString("mascotas_json", "[]");
@@ -100,12 +94,12 @@ public class SharePetInfoActivity extends AppCompatActivity {
                 alergiasMascota = obtenerValorSeguro(obj.optString("alergias", "-"));
                 caracteristicasMascota = obtenerValorSeguro(obj.optString("caracteristicas", "-"));
                 observacionesMascota = obtenerValorSeguro(obj.optString("observaciones", "-"));
+                imagenMascotaUri = obj.optString("imagenUri", "");
             }
         } catch (Exception ignored) {
         }
     }
 
-    // Aquí obtengo todos los datos del dueño desde el registro del usuario
     private void cargarDatosDueno() {
         SharedPreferences prefs = getSharedPreferences("usuarios", MODE_PRIVATE);
 
@@ -123,7 +117,6 @@ public class SharePetInfoActivity extends AppCompatActivity {
         direccionDueno = obtenerValorSeguro(direccionDueno);
     }
 
-    // Este método me ayuda a evitar textos vacíos en el PDF
     private String obtenerValorSeguro(String valor) {
         if (valor == null || valor.trim().isEmpty()) {
             return "-";
@@ -131,10 +124,7 @@ public class SharePetInfoActivity extends AppCompatActivity {
         return valor.trim();
     }
 
-    // Este es el método principal donde genero el PDF
     private void generarYCompartirPdf() {
-
-        // Verifico que el usuario haya seleccionado al menos una opción
         if (!cbVacunas.isChecked() && !cbHistorial.isChecked()) {
             tvMensajeShare.setText("Selecciona al menos una sección.");
             return;
@@ -142,7 +132,6 @@ public class SharePetInfoActivity extends AppCompatActivity {
 
         PdfDocument document = new PdfDocument();
 
-        // Defino estilos de texto
         Paint titulo = new Paint();
         titulo.setTextSize(20f);
         titulo.setFakeBoldText(true);
@@ -157,7 +146,6 @@ public class SharePetInfoActivity extends AppCompatActivity {
         Paint linea = new Paint();
         linea.setStrokeWidth(2f);
 
-        // Creo una página tamaño A4
         PdfDocument.PageInfo pageInfo = new PdfDocument.PageInfo.Builder(595, 842, 1).create();
         PdfDocument.Page page = document.startPage(pageInfo);
 
@@ -165,95 +153,87 @@ public class SharePetInfoActivity extends AppCompatActivity {
         int y = 50;
         int espacio = 20;
 
-        // Obtengo la fecha actual
         String fecha = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(new Date());
 
-        // Encabezado del documento
         page.getCanvas().drawText("REPORTE DE LA MASCOTA", x, y, titulo);
         y += 25;
         page.getCanvas().drawText("Fecha de generación: " + fecha, x, y, texto);
         y += 20;
 
-        // Línea divisora
+        // Aquí intento dibujar la foto de la mascota en el PDF
+        if (imagenMascotaUri != null && !imagenMascotaUri.isEmpty()) {
+            try {
+                InputStream inputStream = getContentResolver().openInputStream(Uri.parse(imagenMascotaUri));
+                Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
+
+                if (bitmap != null) {
+                    Bitmap scaledBitmap = Bitmap.createScaledBitmap(bitmap, 120, 120, false);
+                    page.getCanvas().drawBitmap(scaledBitmap, x, y, null);
+                    y += 140;
+                }
+            } catch (Exception ignored) {
+            }
+        }
+
         page.getCanvas().drawLine(x, y, 550, y, linea);
         y += 25;
 
-        // Sección de datos de la mascota
         page.getCanvas().drawText("DATOS DE LA MASCOTA", x, y, subtitulo);
         y += espacio;
 
         page.getCanvas().drawText("Nombre: " + nombreMascota, x, y, texto);
         y += espacio;
-
         page.getCanvas().drawText("Edad: " + edadMascota, x, y, texto);
         y += espacio;
-
         page.getCanvas().drawText("Raza: " + razaMascota, x, y, texto);
         y += espacio;
-
         page.getCanvas().drawText("Sexo: " + sexoMascota, x, y, texto);
         y += espacio;
-
         page.getCanvas().drawText("Peso: " + (pesoMascota.equals("-") ? "-" : pesoMascota + " kg"), x, y, texto);
         y += espacio;
-
         page.getCanvas().drawText("Color: " + colorMascota, x, y, texto);
         y += espacio;
-
         page.getCanvas().drawText("Alergias: " + alergiasMascota, x, y, texto);
         y += espacio;
-
         page.getCanvas().drawText("Características: " + caracteristicasMascota, x, y, texto);
         y += espacio;
-
         page.getCanvas().drawText("Observaciones: " + observacionesMascota, x, y, texto);
         y += 25;
 
-        // Línea divisora
         page.getCanvas().drawLine(x, y, 550, y, linea);
         y += 25;
 
-        // Sección de datos del dueño
         page.getCanvas().drawText("DATOS DEL DUEÑO", x, y, subtitulo);
         y += espacio;
 
         page.getCanvas().drawText("Nombre: " + nombreDueno, x, y, texto);
         y += espacio;
-
         page.getCanvas().drawText("Teléfono: " + telefonoDueno, x, y, texto);
         y += espacio;
-
         page.getCanvas().drawText("Correo: " + correoDueno, x, y, texto);
         y += espacio;
-
         page.getCanvas().drawText("Dirección: " + direccionDueno, x, y, texto);
         y += 25;
 
-        // Línea divisora
         page.getCanvas().drawLine(x, y, 550, y, linea);
         y += 25;
 
-        // Sección de vacunas
         if (cbVacunas.isChecked()) {
             page.getCanvas().drawText("CARNET DE VACUNACIÓN", x, y, subtitulo);
             y += espacio;
-
             y = escribirVacunas(page, x, y, espacio, texto);
             y += 15;
         }
 
-        // Sección de historial
         if (cbHistorial.isChecked()) {
             page.getCanvas().drawText("HISTORIAL MÉDICO", x, y, subtitulo);
             y += espacio;
-
             y = escribirHistorial(page, x, y, espacio, texto);
         }
 
         document.finishPage(page);
 
         try {
-            // Creo el archivo PDF
             File file = new File(getExternalFilesDir(null), "reporte_" + nombreMascota + ".pdf");
 
             FileOutputStream fos = new FileOutputStream(file);
@@ -261,7 +241,6 @@ public class SharePetInfoActivity extends AppCompatActivity {
             document.close();
             fos.close();
 
-            // Uso FileProvider para compartir el archivo
             Uri uri = FileProvider.getUriForFile(this, getPackageName() + ".provider", file);
 
             Intent intent = new Intent(Intent.ACTION_SEND);
@@ -276,9 +255,7 @@ public class SharePetInfoActivity extends AppCompatActivity {
         }
     }
 
-    // Método para escribir las vacunas en el PDF
     private int escribirVacunas(PdfDocument.Page page, int x, int y, int espacio, Paint paint) {
-
         SharedPreferences prefs = getSharedPreferences("vacunas", MODE_PRIVATE);
         String json = prefs.getString("vacunas_json", "[]");
         boolean encontroVacunas = false;
@@ -299,10 +276,8 @@ public class SharePetInfoActivity extends AppCompatActivity {
 
                 page.getCanvas().drawText("• Vacuna: " + vacuna, x, y, paint);
                 y += espacio;
-
                 page.getCanvas().drawText("  Fecha aplicación: " + fechaAplicacion, x + 10, y, paint);
                 y += espacio;
-
                 page.getCanvas().drawText("  Próxima dosis: " + proximaDosis, x + 10, y, paint);
                 y += espacio;
             }
@@ -318,9 +293,7 @@ public class SharePetInfoActivity extends AppCompatActivity {
         return y;
     }
 
-    // Método para escribir el historial en el PDF
     private int escribirHistorial(PdfDocument.Page page, int x, int y, int espacio, Paint paint) {
-
         SharedPreferences prefs = getSharedPreferences("historial", MODE_PRIVATE);
         String json = prefs.getString("historial_json", "[]");
         boolean encontroHistorial = false;
@@ -342,13 +315,10 @@ public class SharePetInfoActivity extends AppCompatActivity {
 
                 page.getCanvas().drawText("• Fecha: " + fechaRegistro, x, y, paint);
                 y += espacio;
-
                 page.getCanvas().drawText("  Enfermedades: " + enfermedades, x + 10, y, paint);
                 y += espacio;
-
                 page.getCanvas().drawText("  Procedimientos: " + procedimientos, x + 10, y, paint);
                 y += espacio;
-
                 page.getCanvas().drawText("  Medicación: " + medicacion, x + 10, y, paint);
                 y += espacio;
             }
