@@ -41,6 +41,10 @@ public class AddPetActivity extends AppCompatActivity {
     private int birthMonth = -1;
     private int birthDay = -1;
 
+    // Variables para saber si estoy editando
+    private boolean modoEdicion = false;
+    private int petIndex = -1;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -68,6 +72,15 @@ public class AddPetActivity extends AppCompatActivity {
         btnGuardarMascota = findViewById(R.id.btnGuardarMascota);
         tvMensajeAddPet = findViewById(R.id.tvMensajeAddPet);
 
+        // Aquí identifico si estoy en modo edición
+        modoEdicion = getIntent().getBooleanExtra("modo_edicion", false);
+        petIndex = getIntent().getIntExtra("pet_index", -1);
+
+        if (modoEdicion) {
+            btnGuardarMascota.setText("Guardar cambios");
+            cargarDatosMascotaParaEditar();
+        }
+
         // Aquí abro el calendario al tocar el campo de fecha
         etFechaNacimientoMascota.setOnClickListener(v -> mostrarDatePicker());
 
@@ -81,7 +94,44 @@ public class AddPetActivity extends AppCompatActivity {
         btnGuardarMascota.setOnClickListener(v -> guardarMascota());
     }
 
-    // Este metodo abre la galería para seleccionar una foto
+    // Este método carga los datos actuales cuando voy a editar
+    private void cargarDatosMascotaParaEditar() {
+        SharedPreferences prefs = getSharedPreferences("mascotas", MODE_PRIVATE);
+        String json = prefs.getString("mascotas_json", "[]");
+
+        try {
+            JSONArray arr = new JSONArray(json);
+
+            if (petIndex >= 0 && petIndex < arr.length()) {
+                JSONObject obj = arr.getJSONObject(petIndex);
+
+                etNombreMascota.setText(obj.optString("nombre", ""));
+                etFechaNacimientoMascota.setText(obj.optString("fechaNacimiento", ""));
+                etRaza.setText(obj.optString("raza", ""));
+                etCaracteristicas.setText(obj.optString("caracteristicas", ""));
+                etVacunas.setText(obj.optString("vacunas", ""));
+                etHistorialMedico.setText(obj.optString("historial", ""));
+                etSexo.setText(obj.optString("sexo", ""));
+                etPeso.setText(obj.optString("peso", ""));
+                etColor.setText(obj.optString("color", ""));
+                etAlergias.setText(obj.optString("alergias", ""));
+                etObservaciones.setText(obj.optString("observaciones", ""));
+
+                String edad = obj.optString("edadTexto", "-");
+                tvEdad.setText("Edad: " + edad);
+
+                String imagenUriTexto = obj.optString("imagenUri", "");
+                if (!imagenUriTexto.isEmpty()) {
+                    imagenMascotaUri = Uri.parse(imagenUriTexto);
+                    imgMascota.setImageURI(imagenMascotaUri);
+                }
+            }
+        } catch (Exception e) {
+            tvMensajeAddPet.setText("Error cargando datos para editar.");
+        }
+    }
+
+    // Este método abre la galería para seleccionar una foto
     private void abrirGaleria() {
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         intent.setType("image/*");
@@ -91,7 +141,7 @@ public class AddPetActivity extends AppCompatActivity {
         startActivityForResult(intent, REQUEST_IMAGE_PICK);
     }
 
-    // Este metodo abre la cámara
+    // Este método abre la cámara
     private void abrirCamara() {
         Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         startActivityForResult(intent, REQUEST_IMAGE_CAMERA);
@@ -140,7 +190,7 @@ public class AddPetActivity extends AppCompatActivity {
         }
     }
 
-    // Este metodo muestra el calendario para seleccionar la fecha de nacimiento
+    // Este método muestra el calendario para seleccionar la fecha de nacimiento
     private void mostrarDatePicker() {
         Calendar c = Calendar.getInstance();
         int year = c.get(Calendar.YEAR);
@@ -161,7 +211,7 @@ public class AddPetActivity extends AppCompatActivity {
         dialog.show();
     }
 
-    // Este metodo calcula la edad de la mascota con base en la fecha seleccionada
+    // Este método calcula la edad de la mascota con base en la fecha seleccionada
     private String calcularEdadTexto(int y, int m, int d) {
         Calendar hoy = Calendar.getInstance();
         Calendar nacimiento = Calendar.getInstance();
@@ -186,7 +236,7 @@ public class AddPetActivity extends AppCompatActivity {
         return years + " años, " + months + " meses";
     }
 
-    // Este metodo guarda toda la información de la mascota en SharedPreferences
+    // Este método guarda o actualiza toda la información de la mascota
     private void guardarMascota() {
         String nombre = etNombreMascota.getText().toString().trim();
         String fecha = etFechaNacimientoMascota.getText().toString().trim();
@@ -207,7 +257,13 @@ public class AddPetActivity extends AppCompatActivity {
             return;
         }
 
-        String edad = (birthYear == -1) ? "-" : calcularEdadTexto(birthYear, birthMonth, birthDay);
+        String edad;
+        if (birthYear == -1) {
+            String textoEdad = tvEdad.getText().toString().replace("Edad: ", "").trim();
+            edad = textoEdad.isEmpty() ? "-" : textoEdad;
+        } else {
+            edad = calcularEdadTexto(birthYear, birthMonth, birthDay);
+        }
 
         SharedPreferences prefs = getSharedPreferences("mascotas", MODE_PRIVATE);
         String json = prefs.getString("mascotas_json", "[]");
@@ -223,22 +279,23 @@ public class AddPetActivity extends AppCompatActivity {
             obj.put("caracteristicas", caracteristicas);
             obj.put("vacunas", vacunas);
             obj.put("historial", historial);
-
-            // Nuevos datos del perfil completo
             obj.put("sexo", sexo);
             obj.put("peso", peso);
             obj.put("color", color);
             obj.put("alergias", alergias);
             obj.put("observaciones", observaciones);
-
-            // Aquí guardo la URI de la foto como texto
             obj.put("imagenUri", imagenMascotaUri != null ? imagenMascotaUri.toString() : "");
 
-            arr.put(obj);
+            // Aquí decido si agrego una mascota nueva o actualizo una existente
+            if (modoEdicion && petIndex >= 0 && petIndex < arr.length()) {
+                arr.put(petIndex, obj);
+            } else {
+                arr.put(obj);
+            }
 
             prefs.edit().putString("mascotas_json", arr.toString()).apply();
 
-            tvMensajeAddPet.setText("Mascota registrada ✅");
+            tvMensajeAddPet.setText(modoEdicion ? "Mascota actualizada ✅" : "Mascota registrada ✅");
             finish();
 
         } catch (Exception e) {

@@ -31,7 +31,7 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
 
         holder.tvTituloNotificacion.setText(item.titulo);
         holder.tvTipoNotificacion.setText("Tipo: " + item.tipo);
-        holder.tvMensajeNotificacion.setText(item.mensaje);
+        holder.tvMensajeNotificacion.setText("Mensaje: " + item.mensaje);
     }
 
     @Override

@@ -26,7 +26,8 @@ public class PetDetailActivity extends AppCompatActivity {
     // Aquí declaro la imagen de la mascota
     private ImageView imgMascotaDetalle;
 
-    private Button btnAgregarVacuna, btnCarnetVacunas, btnAgregarHistorial, btnVerHistorial, btnCompartirInfo;
+    private Button btnEditarMascota, btnAgregarVacuna, btnCarnetVacunas,
+            btnAgregarHistorial, btnVerHistorial, btnCompartirInfo;
 
     private int index = -1;
 
@@ -50,6 +51,7 @@ public class PetDetailActivity extends AppCompatActivity {
         tvAlergiasDetalle = findViewById(R.id.tvAlergiasDetalle);
         tvObservacionesDetalle = findViewById(R.id.tvObservacionesDetalle);
 
+        btnEditarMascota = findViewById(R.id.btnEditarMascota);
         btnAgregarVacuna = findViewById(R.id.btnAgregarVacuna);
         btnCarnetVacunas = findViewById(R.id.btnCarnetVacunas);
         btnAgregarHistorial = findViewById(R.id.btnAgregarHistorial);
@@ -63,6 +65,14 @@ public class PetDetailActivity extends AppCompatActivity {
             mostrarMascotaNoEncontrada();
             return;
         }
+
+        // Botón para editar mascota
+        btnEditarMascota.setOnClickListener(v -> {
+            Intent intent = new Intent(PetDetailActivity.this, AddPetActivity.class);
+            intent.putExtra("pet_index", index);
+            intent.putExtra("modo_edicion", true);
+            startActivity(intent);
+        });
 
         // Botón para agregar vacuna
         btnAgregarVacuna.setOnClickListener(v -> {
@@ -112,7 +122,7 @@ public class PetDetailActivity extends AppCompatActivity {
         }
     }
 
-    // Este método carga toda la información de la mascota seleccionada
+    // Este metodo carga toda la información de la mascota seleccionada
     private void cargarMascotaPorIndice(int index) {
         SharedPreferences prefs = getSharedPreferences("mascotas", MODE_PRIVATE);
         String json = prefs.getString("mascotas_json", "[]");
@@ -132,21 +142,16 @@ public class PetDetailActivity extends AppCompatActivity {
             String edad = obj.optString("edadTexto", "-");
             String raza = obj.optString("raza", "-");
             String carac = obj.optString("caracteristicas", "");
-
             String sexo = obj.optString("sexo", "");
             String peso = obj.optString("peso", "");
             String color = obj.optString("color", "");
             String alergias = obj.optString("alergias", "");
             String observaciones = obj.optString("observaciones", "");
-
-            // Aquí recupero la URI de la imagen
             String imagenUri = obj.optString("imagenUri", "");
 
             tvNombreDetalle.setText(nombre.isEmpty() ? "Sin nombre" : nombre);
             tvInfoBasicaDetalle.setText(raza + " • " + fecha + " • " + edad);
             tvCaracteristicasDetalle.setText("Características: " + (carac.isEmpty() ? "-" : carac));
-
-            // Aquí muestro los nuevos campos del perfil completo
             tvSexoDetalle.setText("Sexo: " + (sexo.isEmpty() ? "-" : sexo));
             tvPesoDetalle.setText("Peso: " + (peso.isEmpty() ? "-" : peso + " kg"));
             tvColorDetalle.setText("Color: " + (color.isEmpty() ? "-" : color));
@@ -235,7 +240,7 @@ public class PetDetailActivity extends AppCompatActivity {
         return total;
     }
 
-    // Este método muestra un estado por defecto si la mascota no existe
+    // Este metodo muestra un estado por defecto si la mascota no existe
     private void mostrarMascotaNoEncontrada() {
         tvNombreDetalle.setText("Mascota no encontrada");
         tvInfoBasicaDetalle.setText("-");
