@@ -1,10 +1,13 @@
 package com.liseth.miprimeraapp;
 
+import android.Manifest;
 import android.app.DatePickerDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.widget.Button;
@@ -12,7 +15,10 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -44,6 +50,16 @@ public class AddPetActivity extends AppCompatActivity {
     // Variables para saber si estoy editando
     private boolean modoEdicion = false;
     private int petIndex = -1;
+
+    // Este launcher me sirve para pedir permiso de cámara en tiempo de ejecución
+    private final ActivityResultLauncher<String> cameraPermissionLauncher =
+            registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
+                if (isGranted) {
+                    abrirCamaraDirectamente();
+                } else {
+                    tvMensajeAddPet.setText("Debes conceder permiso de cámara para tomar la foto.");
+                }
+            });
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -87,14 +103,40 @@ public class AddPetActivity extends AppCompatActivity {
         // Aquí abro el selector de imágenes
         btnSeleccionarImagen.setOnClickListener(v -> abrirGaleria());
 
-        // Aquí abro la cámara
-        btnTomarFoto.setOnClickListener(v -> abrirCamara());
+        // Aquí valido permiso y luego abro la cámara
+        btnTomarFoto.setOnClickListener(v -> validarPermisoCamaraYAbrir());
 
         // Aquí guardo la mascota cuando se presiona el botón
         btnGuardarMascota.setOnClickListener(v -> guardarMascota());
     }
 
-    // Este método carga los datos actuales cuando voy a editar
+    // Este metodo valida si ya tengo permiso de cámara
+    private void validarPermisoCamaraYAbrir() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
+                == PackageManager.PERMISSION_GRANTED) {
+            abrirCamaraDirectamente();
+        } else {
+            cameraPermissionLauncher.launch(Manifest.permission.CAMERA);
+        }
+    }
+
+    // Este metodo abre la cámara una vez tengo permiso
+    private void abrirCamaraDirectamente() {
+        try {
+            Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+
+            if (intent.resolveActivity(getPackageManager()) != null) {
+                startActivityForResult(intent, REQUEST_IMAGE_CAMERA);
+            } else {
+                tvMensajeAddPet.setText("No se encontró aplicación de cámara.");
+            }
+
+        } catch (Exception e) {
+            tvMensajeAddPet.setText("No se pudo abrir la cámara.");
+        }
+    }
+
+    // Este metodo carga los datos actuales cuando voy a editar
     private void cargarDatosMascotaParaEditar() {
         SharedPreferences prefs = getSharedPreferences("mascotas", MODE_PRIVATE);
         String json = prefs.getString("mascotas_json", "[]");
@@ -131,20 +173,26 @@ public class AddPetActivity extends AppCompatActivity {
         }
     }
 
-    // Este método abre la galería para seleccionar una foto
+    // Este metodo abre la galería para seleccionar una foto
     private void abrirGaleria() {
-        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-        intent.setType("image/*");
-        intent.addCategory(Intent.CATEGORY_OPENABLE);
-        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-        intent.addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
-        startActivityForResult(intent, REQUEST_IMAGE_PICK);
-    }
+        try {
+            Intent intent;
 
-    // Este método abre la cámara
-    private void abrirCamara() {
-        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        startActivityForResult(intent, REQUEST_IMAGE_CAMERA);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                intent.addCategory(Intent.CATEGORY_OPENABLE);
+                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                intent.addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
+            } else {
+                intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+            }
+
+            intent.setType("image/*");
+            startActivityForResult(intent, REQUEST_IMAGE_PICK);
+
+        } catch (Exception e) {
+            tvMensajeAddPet.setText("No se pudo abrir la galería.");
+        }
     }
 
     // Aquí recibo la imagen seleccionada o la foto tomada
@@ -153,21 +201,36 @@ public class AddPetActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
 
         try {
-            if (requestCode == REQUEST_IMAGE_PICK && resultCode == RESULT_OK && data != null && data.getData() != null) {
+            // Caso 1: seleccionar imagen desde galería
+            if (requestCode == REQUEST_IMAGE_PICK && resultCode == RESULT_OK) {
+
+                if (data == null || data.getData() == null) {
+                    tvMensajeAddPet.setText("No se pudo seleccionar la imagen.");
+                    return;
+                }
+
                 imagenMascotaUri = data.getData();
 
-                final int takeFlags = data.getFlags()
-                        & (Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                    final int takeFlags = data.getFlags() & Intent.FLAG_GRANT_READ_URI_PERMISSION;
 
-                try {
-                    getContentResolver().takePersistableUriPermission(imagenMascotaUri, takeFlags);
-                } catch (Exception ignored) {
+                    try {
+                        getContentResolver().takePersistableUriPermission(imagenMascotaUri, takeFlags);
+                    } catch (Exception ignored) {
+                    }
                 }
 
                 imgMascota.setImageURI(imagenMascotaUri);
             }
 
-            if (requestCode == REQUEST_IMAGE_CAMERA && resultCode == RESULT_OK && data != null) {
+            // Caso 2: tomar foto con cámara
+            if (requestCode == REQUEST_IMAGE_CAMERA && resultCode == RESULT_OK) {
+
+                if (data == null || data.getExtras() == null) {
+                    tvMensajeAddPet.setText("No se pudo capturar la imagen.");
+                    return;
+                }
+
                 Bitmap foto = (Bitmap) data.getExtras().get("data");
 
                 if (foto != null) {
@@ -180,17 +243,23 @@ public class AddPetActivity extends AppCompatActivity {
                             null
                     );
 
-                    if (path != null) {
+                    if (path != null && !path.isEmpty()) {
                         imagenMascotaUri = Uri.parse(path);
+                    } else {
+                        tvMensajeAddPet.setText("No se pudo guardar la foto tomada.");
                     }
+                } else {
+                    tvMensajeAddPet.setText("La cámara no devolvió imagen.");
                 }
             }
+
         } catch (Exception e) {
-            tvMensajeAddPet.setText("Error cargando la imagen.");
+            tvMensajeAddPet.setText("Error al cargar la imagen.");
+            e.printStackTrace();
         }
     }
 
-    // Este método muestra el calendario para seleccionar la fecha de nacimiento
+    // Este metodo muestra el calendario para seleccionar la fecha de nacimiento
     private void mostrarDatePicker() {
         Calendar c = Calendar.getInstance();
         int year = c.get(Calendar.YEAR);
@@ -211,7 +280,7 @@ public class AddPetActivity extends AppCompatActivity {
         dialog.show();
     }
 
-    // Este método calcula la edad de la mascota con base en la fecha seleccionada
+    // Este metodo calcula la edad de la mascota con base en la fecha seleccionada
     private String calcularEdadTexto(int y, int m, int d) {
         Calendar hoy = Calendar.getInstance();
         Calendar nacimiento = Calendar.getInstance();
@@ -236,7 +305,7 @@ public class AddPetActivity extends AppCompatActivity {
         return years + " años, " + months + " meses";
     }
 
-    // Este método guarda o actualiza toda la información de la mascota
+    // Este metodo guarda o actualiza toda la información de la mascota
     private void guardarMascota() {
         String nombre = etNombreMascota.getText().toString().trim();
         String fecha = etFechaNacimientoMascota.getText().toString().trim();
@@ -286,7 +355,6 @@ public class AddPetActivity extends AppCompatActivity {
             obj.put("observaciones", observaciones);
             obj.put("imagenUri", imagenMascotaUri != null ? imagenMascotaUri.toString() : "");
 
-            // Aquí decido si agrego una mascota nueva o actualizo una existente
             if (modoEdicion && petIndex >= 0 && petIndex < arr.length()) {
                 arr.put(petIndex, obj);
             } else {
