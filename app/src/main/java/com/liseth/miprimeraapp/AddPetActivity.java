@@ -3,8 +3,8 @@ package com.liseth.miprimeraapp;
 import android.Manifest;
 import android.app.DatePickerDialog;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Build;
@@ -20,14 +20,11 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
-
 import java.util.Calendar;
 
 public class AddPetActivity extends AppCompatActivity {
 
-    // Aquí declaro los campos del formulario de registro de mascota
+    // Aquí declaro los campos del formulario de mascota
     private EditText etNombreMascota, etFechaNacimientoMascota, etRaza, etCaracteristicas,
             etVacunas, etHistorialMedico, etSexo, etPeso, etColor, etAlergias, etObservaciones;
 
@@ -35,23 +32,25 @@ public class AddPetActivity extends AppCompatActivity {
     private Button btnGuardarMascota, btnSeleccionarImagen, btnTomarFoto;
     private ImageView imgMascota;
 
-    // Aquí guardo la URI de la imagen seleccionada
+    // Aquí guardo la URI de la foto seleccionada o tomada
     private Uri imagenMascotaUri = null;
 
-    // Códigos para identificar selección de imagen y cámara
     private static final int REQUEST_IMAGE_PICK = 1001;
     private static final int REQUEST_IMAGE_CAMERA = 1002;
 
-    // Variables para guardar la fecha seleccionada y calcular la edad
+    // Variables para calcular la edad
     private int birthYear = -1;
     private int birthMonth = -1;
     private int birthDay = -1;
 
-    // Variables para saber si estoy editando
+    // Variables para saber si estoy registrando o editando
     private boolean modoEdicion = false;
-    private int petIndex = -1;
+    private int petId = -1;
 
-    // Este launcher me sirve para pedir permiso de cámara en tiempo de ejecución
+    // Aquí declaro el DAO para guardar o actualizar mascotas en SQLite
+    private MascotaDAO mascotaDAO;
+
+    // Este launcher me permite solicitar permiso de cámara en Android
     private final ActivityResultLauncher<String> cameraPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
                 if (isGranted) {
@@ -66,7 +65,8 @@ public class AddPetActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_add_pet);
 
-        // Aquí relaciono las variables con los elementos del XML
+        mascotaDAO = new MascotaDAO(this);
+
         etNombreMascota = findViewById(R.id.etNombreMascota);
         etFechaNacimientoMascota = findViewById(R.id.etFechaNacimientoMascota);
         tvEdad = findViewById(R.id.tvEdad);
@@ -88,92 +88,60 @@ public class AddPetActivity extends AppCompatActivity {
         btnGuardarMascota = findViewById(R.id.btnGuardarMascota);
         tvMensajeAddPet = findViewById(R.id.tvMensajeAddPet);
 
-        // Aquí identifico si estoy en modo edición
+        // Aquí identifico si esta pantalla se abrió para editar una mascota
         modoEdicion = getIntent().getBooleanExtra("modo_edicion", false);
-        petIndex = getIntent().getIntExtra("pet_index", -1);
+        petId = getIntent().getIntExtra("pet_id", -1);
 
-        if (modoEdicion) {
+        if (modoEdicion && petId != -1) {
             btnGuardarMascota.setText("Guardar cambios");
-            cargarDatosMascotaParaEditar();
+            cargarDatosMascotaParaEditar(petId);
         }
 
-        // Aquí abro el calendario al tocar el campo de fecha
         etFechaNacimientoMascota.setOnClickListener(v -> mostrarDatePicker());
 
-        // Aquí abro el selector de imágenes
         btnSeleccionarImagen.setOnClickListener(v -> abrirGaleria());
 
-        // Aquí valido permiso y luego abro la cámara
         btnTomarFoto.setOnClickListener(v -> validarPermisoCamaraYAbrir());
 
-        // Aquí guardo la mascota cuando se presiona el botón
         btnGuardarMascota.setOnClickListener(v -> guardarMascota());
     }
 
-    // Este metodo valida si ya tengo permiso de cámara
-    private void validarPermisoCamaraYAbrir() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
-                == PackageManager.PERMISSION_GRANTED) {
-            abrirCamaraDirectamente();
-        } else {
-            cameraPermissionLauncher.launch(Manifest.permission.CAMERA);
-        }
-    }
-
-    // Este metodo abre la cámara una vez tengo permiso
-    private void abrirCamaraDirectamente() {
-        try {
-            Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-
-            if (intent.resolveActivity(getPackageManager()) != null) {
-                startActivityForResult(intent, REQUEST_IMAGE_CAMERA);
-            } else {
-                tvMensajeAddPet.setText("No se encontró aplicación de cámara.");
-            }
-
-        } catch (Exception e) {
-            tvMensajeAddPet.setText("No se pudo abrir la cámara.");
-        }
-    }
-
-    // Este metodo carga los datos actuales cuando voy a editar
-    private void cargarDatosMascotaParaEditar() {
-        SharedPreferences prefs = getSharedPreferences("mascotas", MODE_PRIVATE);
-        String json = prefs.getString("mascotas_json", "[]");
+    // Este método carga los datos actuales de la mascota cuando estoy editando
+    private void cargarDatosMascotaParaEditar(int id) {
+        Cursor cursor = mascotaDAO.obtenerMascotaPorId(id);
 
         try {
-            JSONArray arr = new JSONArray(json);
+            if (cursor != null && cursor.moveToFirst()) {
+                etNombreMascota.setText(cursor.getString(cursor.getColumnIndexOrThrow("nombre")));
+                etFechaNacimientoMascota.setText(cursor.getString(cursor.getColumnIndexOrThrow("fecha_nacimiento")));
+                tvEdad.setText("Edad: " + cursor.getString(cursor.getColumnIndexOrThrow("edad_texto")));
+                etRaza.setText(cursor.getString(cursor.getColumnIndexOrThrow("raza")));
+                etCaracteristicas.setText(cursor.getString(cursor.getColumnIndexOrThrow("caracteristicas")));
+                etVacunas.setText(cursor.getString(cursor.getColumnIndexOrThrow("vacunas")));
+                etHistorialMedico.setText(cursor.getString(cursor.getColumnIndexOrThrow("historial")));
+                etSexo.setText(cursor.getString(cursor.getColumnIndexOrThrow("sexo")));
+                etPeso.setText(cursor.getString(cursor.getColumnIndexOrThrow("peso")));
+                etColor.setText(cursor.getString(cursor.getColumnIndexOrThrow("color")));
+                etAlergias.setText(cursor.getString(cursor.getColumnIndexOrThrow("alergias")));
+                etObservaciones.setText(cursor.getString(cursor.getColumnIndexOrThrow("observaciones")));
 
-            if (petIndex >= 0 && petIndex < arr.length()) {
-                JSONObject obj = arr.getJSONObject(petIndex);
+                String imagen = cursor.getString(cursor.getColumnIndexOrThrow("imagen_uri"));
 
-                etNombreMascota.setText(obj.optString("nombre", ""));
-                etFechaNacimientoMascota.setText(obj.optString("fechaNacimiento", ""));
-                etRaza.setText(obj.optString("raza", ""));
-                etCaracteristicas.setText(obj.optString("caracteristicas", ""));
-                etVacunas.setText(obj.optString("vacunas", ""));
-                etHistorialMedico.setText(obj.optString("historial", ""));
-                etSexo.setText(obj.optString("sexo", ""));
-                etPeso.setText(obj.optString("peso", ""));
-                etColor.setText(obj.optString("color", ""));
-                etAlergias.setText(obj.optString("alergias", ""));
-                etObservaciones.setText(obj.optString("observaciones", ""));
-
-                String edad = obj.optString("edadTexto", "-");
-                tvEdad.setText("Edad: " + edad);
-
-                String imagenUriTexto = obj.optString("imagenUri", "");
-                if (!imagenUriTexto.isEmpty()) {
-                    imagenMascotaUri = Uri.parse(imagenUriTexto);
+                if (imagen != null && !imagen.isEmpty()) {
+                    imagenMascotaUri = Uri.parse(imagen);
                     imgMascota.setImageURI(imagenMascotaUri);
                 }
             }
         } catch (Exception e) {
             tvMensajeAddPet.setText("Error cargando datos para editar.");
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
         }
     }
 
-    // Este metodo abre la galería para seleccionar una foto
+    // Este método abre la galería del dispositivo
     private void abrirGaleria() {
         try {
             Intent intent;
@@ -195,15 +163,39 @@ public class AddPetActivity extends AppCompatActivity {
         }
     }
 
-    // Aquí recibo la imagen seleccionada o la foto tomada
+    // Este método revisa si tengo permiso de cámara antes de abrirla
+    private void validarPermisoCamaraYAbrir() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
+                == PackageManager.PERMISSION_GRANTED) {
+            abrirCamaraDirectamente();
+        } else {
+            cameraPermissionLauncher.launch(Manifest.permission.CAMERA);
+        }
+    }
+
+    // Este método abre directamente la cámara
+    private void abrirCamaraDirectamente() {
+        try {
+            Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+
+            if (intent.resolveActivity(getPackageManager()) != null) {
+                startActivityForResult(intent, REQUEST_IMAGE_CAMERA);
+            } else {
+                tvMensajeAddPet.setText("No se encontró aplicación de cámara.");
+            }
+
+        } catch (Exception e) {
+            tvMensajeAddPet.setText("No se pudo abrir la cámara.");
+        }
+    }
+
+    // Aquí recibo la foto de galería o cámara
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
         try {
-            // Caso 1: seleccionar imagen desde galería
             if (requestCode == REQUEST_IMAGE_PICK && resultCode == RESULT_OK) {
-
                 if (data == null || data.getData() == null) {
                     tvMensajeAddPet.setText("No se pudo seleccionar la imagen.");
                     return;
@@ -223,9 +215,7 @@ public class AddPetActivity extends AppCompatActivity {
                 imgMascota.setImageURI(imagenMascotaUri);
             }
 
-            // Caso 2: tomar foto con cámara
             if (requestCode == REQUEST_IMAGE_CAMERA && resultCode == RESULT_OK) {
-
                 if (data == null || data.getExtras() == null) {
                     tvMensajeAddPet.setText("No se pudo capturar la imagen.");
                     return;
@@ -245,26 +235,18 @@ public class AddPetActivity extends AppCompatActivity {
 
                     if (path != null && !path.isEmpty()) {
                         imagenMascotaUri = Uri.parse(path);
-                    } else {
-                        tvMensajeAddPet.setText("No se pudo guardar la foto tomada.");
                     }
-                } else {
-                    tvMensajeAddPet.setText("La cámara no devolvió imagen.");
                 }
             }
 
         } catch (Exception e) {
             tvMensajeAddPet.setText("Error al cargar la imagen.");
-            e.printStackTrace();
         }
     }
 
-    // Este metodo muestra el calendario para seleccionar la fecha de nacimiento
+    // Este método muestra el calendario para seleccionar fecha de nacimiento
     private void mostrarDatePicker() {
         Calendar c = Calendar.getInstance();
-        int year = c.get(Calendar.YEAR);
-        int month = c.get(Calendar.MONTH);
-        int day = c.get(Calendar.DAY_OF_MONTH);
 
         DatePickerDialog dialog = new DatePickerDialog(this, (view, y, m, d) -> {
             birthYear = y;
@@ -275,12 +257,13 @@ public class AddPetActivity extends AppCompatActivity {
             etFechaNacimientoMascota.setText(fecha);
 
             tvEdad.setText("Edad: " + calcularEdadTexto(y, m, d));
-        }, year, month, day);
+
+        }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH));
 
         dialog.show();
     }
 
-    // Este metodo calcula la edad de la mascota con base en la fecha seleccionada
+    // Este método calcula la edad de la mascota
     private String calcularEdadTexto(int y, int m, int d) {
         Calendar hoy = Calendar.getInstance();
         Calendar nacimiento = Calendar.getInstance();
@@ -292,82 +275,96 @@ public class AddPetActivity extends AppCompatActivity {
         int months = hoy.get(Calendar.MONTH) - nacimiento.get(Calendar.MONTH);
         int days = hoy.get(Calendar.DAY_OF_MONTH) - nacimiento.get(Calendar.DAY_OF_MONTH);
 
-        if (days < 0) months -= 1;
+        if (days < 0) months--;
 
         if (months < 0) {
-            years -= 1;
+            years--;
             months += 12;
         }
 
-        if (years < 0) return "-";
         if (years == 0) return months + " meses";
 
         return years + " años, " + months + " meses";
     }
 
-    // Este metodo guarda o actualiza toda la información de la mascota
+    // Este método guarda una mascota nueva o actualiza una existente
     private void guardarMascota() {
         String nombre = etNombreMascota.getText().toString().trim();
         String fecha = etFechaNacimientoMascota.getText().toString().trim();
         String raza = etRaza.getText().toString().trim();
+
         String caracteristicas = etCaracteristicas.getText().toString().trim();
         String vacunas = etVacunas.getText().toString().trim();
         String historial = etHistorialMedico.getText().toString().trim();
-
         String sexo = etSexo.getText().toString().trim();
         String peso = etPeso.getText().toString().trim();
         String color = etColor.getText().toString().trim();
         String alergias = etAlergias.getText().toString().trim();
         String observaciones = etObservaciones.getText().toString().trim();
 
-        // Aquí valido los campos mínimos obligatorios
         if (nombre.isEmpty() || fecha.isEmpty() || raza.isEmpty()) {
             tvMensajeAddPet.setText("Completa al menos: Nombre, Fecha de nacimiento y Raza.");
             return;
         }
 
         String edad;
+
         if (birthYear == -1) {
-            String textoEdad = tvEdad.getText().toString().replace("Edad: ", "").trim();
-            edad = textoEdad.isEmpty() ? "-" : textoEdad;
+            edad = tvEdad.getText().toString().replace("Edad: ", "").trim();
         } else {
             edad = calcularEdadTexto(birthYear, birthMonth, birthDay);
         }
 
-        SharedPreferences prefs = getSharedPreferences("mascotas", MODE_PRIVATE);
-        String json = prefs.getString("mascotas_json", "[]");
+        String imagen = imagenMascotaUri != null ? imagenMascotaUri.toString() : "";
 
-        try {
-            JSONArray arr = new JSONArray(json);
+        if (modoEdicion && petId != -1) {
+            int resultado = mascotaDAO.actualizarMascota(
+                    petId,
+                    nombre,
+                    fecha,
+                    edad,
+                    raza,
+                    caracteristicas,
+                    vacunas,
+                    historial,
+                    sexo,
+                    peso,
+                    color,
+                    alergias,
+                    observaciones,
+                    imagen
+            );
 
-            JSONObject obj = new JSONObject();
-            obj.put("nombre", nombre);
-            obj.put("fechaNacimiento", fecha);
-            obj.put("edadTexto", edad);
-            obj.put("raza", raza);
-            obj.put("caracteristicas", caracteristicas);
-            obj.put("vacunas", vacunas);
-            obj.put("historial", historial);
-            obj.put("sexo", sexo);
-            obj.put("peso", peso);
-            obj.put("color", color);
-            obj.put("alergias", alergias);
-            obj.put("observaciones", observaciones);
-            obj.put("imagenUri", imagenMascotaUri != null ? imagenMascotaUri.toString() : "");
-
-            if (modoEdicion && petIndex >= 0 && petIndex < arr.length()) {
-                arr.put(petIndex, obj);
+            if (resultado > 0) {
+                tvMensajeAddPet.setText("Mascota actualizada ✅");
+                finish();
             } else {
-                arr.put(obj);
+                tvMensajeAddPet.setText("Error actualizando la mascota.");
             }
 
-            prefs.edit().putString("mascotas_json", arr.toString()).apply();
+        } else {
+            long resultado = mascotaDAO.insertarMascota(
+                    nombre,
+                    fecha,
+                    edad,
+                    raza,
+                    caracteristicas,
+                    vacunas,
+                    historial,
+                    sexo,
+                    peso,
+                    color,
+                    alergias,
+                    observaciones,
+                    imagen
+            );
 
-            tvMensajeAddPet.setText(modoEdicion ? "Mascota actualizada ✅" : "Mascota registrada ✅");
-            finish();
-
-        } catch (Exception e) {
-            tvMensajeAddPet.setText("Error guardando la mascota.");
+            if (resultado != -1) {
+                tvMensajeAddPet.setText("Mascota registrada ✅");
+                finish();
+            } else {
+                tvMensajeAddPet.setText("Error guardando la mascota.");
+            }
         }
     }
 }

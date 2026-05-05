@@ -1,7 +1,7 @@
 package com.liseth.miprimeraapp;
 
 import android.content.Intent;
-import android.content.SharedPreferences;
+import android.database.Cursor;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
@@ -10,15 +10,15 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
-
 import java.util.ArrayList;
 
 public class PetsListActivity extends AppCompatActivity {
 
     private RecyclerView rvMascotas;
     private TextView tvVacio;
+
+    // Aquí declaro el DAO para consultar las mascotas guardadas en SQLite
+    private MascotaDAO mascotaDAO;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -28,6 +28,9 @@ public class PetsListActivity extends AppCompatActivity {
         rvMascotas = findViewById(R.id.rvMascotas);
         tvVacio = findViewById(R.id.tvVacio);
 
+        // Aquí inicializo el DAO de mascotas
+        mascotaDAO = new MascotaDAO(this);
+
         rvMascotas.setLayoutManager(new LinearLayoutManager(this));
     }
 
@@ -35,65 +38,75 @@ public class PetsListActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
 
-        ArrayList<Pet> pets = cargarMascotas();
+        // Cada vez que regreso a esta pantalla, cargo las mascotas desde SQLite
+        ArrayList<Pet> pets = cargarMascotasDesdeSQLite();
 
         tvVacio.setVisibility(pets.isEmpty() ? View.VISIBLE : View.GONE);
 
         rvMascotas.setAdapter(new PetAdapter(pets, position -> {
+            Pet pet = pets.get(position);
+
             Intent intent = new Intent(PetsListActivity.this, PetDetailActivity.class);
+
+            // Aquí envío el id real de SQLite para abrir el detalle correcto
+            intent.putExtra("pet_id", pet.id);
+
+            // Mantengo pet_index mientras vacunas e historial siguen en la otra estructura
             intent.putExtra("pet_index", position);
+
             startActivity(intent);
         }));
     }
 
-    // Aquí cargo la información de todas las mascotas guardadas
-    private ArrayList<Pet> cargarMascotas() {
+    // Este método consulta las mascotas desde SQLite y las convierte en objetos Pet
+    private ArrayList<Pet> cargarMascotasDesdeSQLite() {
         ArrayList<Pet> lista = new ArrayList<>();
 
-        SharedPreferences prefs = getSharedPreferences("mascotas", MODE_PRIVATE);
-        String json = prefs.getString("mascotas_json", "[]");
+        Cursor cursor = mascotaDAO.obtenerMascotas();
 
         try {
-            JSONArray arr = new JSONArray(json);
+            if (cursor != null && cursor.moveToFirst()) {
+                do {
+                    int id = cursor.getInt(cursor.getColumnIndexOrThrow("id"));
+                    String nombre = cursor.getString(cursor.getColumnIndexOrThrow("nombre"));
+                    String fecha = cursor.getString(cursor.getColumnIndexOrThrow("fecha_nacimiento"));
+                    String edad = cursor.getString(cursor.getColumnIndexOrThrow("edad_texto"));
+                    String raza = cursor.getString(cursor.getColumnIndexOrThrow("raza"));
+                    String caracteristicas = cursor.getString(cursor.getColumnIndexOrThrow("caracteristicas"));
+                    String vacunas = cursor.getString(cursor.getColumnIndexOrThrow("vacunas"));
+                    String historial = cursor.getString(cursor.getColumnIndexOrThrow("historial"));
+                    String sexo = cursor.getString(cursor.getColumnIndexOrThrow("sexo"));
+                    String peso = cursor.getString(cursor.getColumnIndexOrThrow("peso"));
+                    String color = cursor.getString(cursor.getColumnIndexOrThrow("color"));
+                    String alergias = cursor.getString(cursor.getColumnIndexOrThrow("alergias"));
+                    String observaciones = cursor.getString(cursor.getColumnIndexOrThrow("observaciones"));
+                    String imagenUri = cursor.getString(cursor.getColumnIndexOrThrow("imagen_uri"));
 
-            for (int i = 0; i < arr.length(); i++) {
-                JSONObject obj = arr.getJSONObject(i);
+                    lista.add(new Pet(
+                            id,
+                            nombre,
+                            fecha,
+                            edad,
+                            raza,
+                            caracteristicas,
+                            vacunas,
+                            historial,
+                            sexo,
+                            peso,
+                            color,
+                            alergias,
+                            observaciones,
+                            imagenUri
+                    ));
 
-                String nombre = obj.optString("nombre", "");
-                String fecha = obj.optString("fechaNacimiento", "");
-                String edad = obj.optString("edadTexto", "-");
-                String raza = obj.optString("raza", "");
-                String carac = obj.optString("caracteristicas", "");
-                String vacunas = obj.optString("vacunas", "");
-                String historial = obj.optString("historial", "");
-
-                // Nuevos campos del perfil completo
-                String sexo = obj.optString("sexo", "");
-                String peso = obj.optString("peso", "");
-                String color = obj.optString("color", "");
-                String alergias = obj.optString("alergias", "");
-                String observaciones = obj.optString("observaciones", "");
-
-                // Aquí recupero la URI de la foto
-                String imagenUri = obj.optString("imagenUri", "");
-
-                lista.add(new Pet(
-                        nombre,
-                        fecha,
-                        edad,
-                        raza,
-                        carac,
-                        vacunas,
-                        historial,
-                        sexo,
-                        peso,
-                        color,
-                        alergias,
-                        observaciones,
-                        imagenUri
-                ));
+                } while (cursor.moveToNext());
             }
         } catch (Exception ignored) {
+        } finally {
+            // Aquí cierro el cursor para evitar errores de memoria
+            if (cursor != null) {
+                cursor.close();
+            }
         }
 
         return lista;

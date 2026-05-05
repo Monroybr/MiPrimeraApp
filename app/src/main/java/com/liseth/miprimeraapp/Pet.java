@@ -2,7 +2,10 @@ package com.liseth.miprimeraapp;
 
 public class Pet {
 
-    // Aquí guardo toda la información principal de la mascota
+    // Aquí guardo el id real de la mascota en SQLite
+    public int id;
+
+    // Aquí guardo la información principal de la mascota
     public String nombre;
     public String fechaNacimiento;
     public String edadTexto;
@@ -11,18 +14,19 @@ public class Pet {
     public String vacunas;
     public String historial;
 
-    // Nuevos campos del perfil completo
+    // Aquí guardo los datos adicionales del perfil completo
     public String sexo;
     public String peso;
     public String color;
     public String alergias;
     public String observaciones;
 
-    // Aquí guardo la URI de la imagen de la mascota
+    // Aquí guardo la ruta o URI de la imagen de la mascota
     public String imagenUri;
 
-    // Constructor completo de la mascota
-    public Pet(String nombre,
+    // Constructor completo para crear objetos de tipo Pet desde SQLite
+    public Pet(int id,
+               String nombre,
                String fechaNacimiento,
                String edadTexto,
                String raza,
@@ -36,6 +40,7 @@ public class Pet {
                String observaciones,
                String imagenUri) {
 
+        this.id = id;
         this.nombre = nombre;
         this.fechaNacimiento = fechaNacimiento;
         this.edadTexto = edadTexto;

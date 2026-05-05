@@ -2,7 +2,6 @@ package com.liseth.miprimeraapp;
 
 import android.app.DatePickerDialog;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.EditText;
@@ -21,10 +20,16 @@ public class RegisterActivity extends AppCompatActivity {
     private Button btnCrearCuenta;
     private TextView tvMensajeRegistro;
 
+    // Aquí declaro el DAO que se encarga de guardar usuarios en SQLite
+    private UsuarioDAO usuarioDAO;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_register);
+
+        // Aquí inicializo el DAO de usuarios
+        usuarioDAO = new UsuarioDAO(this);
 
         // Aquí relaciono las variables con los elementos del XML
         etNombres = findViewById(R.id.etNombres);
@@ -48,6 +53,7 @@ public class RegisterActivity extends AppCompatActivity {
     // Este método muestra el calendario para seleccionar la fecha de nacimiento
     private void mostrarDatePicker() {
         Calendar c = Calendar.getInstance();
+
         int year = c.get(Calendar.YEAR);
         int month = c.get(Calendar.MONTH);
         int day = c.get(Calendar.DAY_OF_MONTH);
@@ -60,7 +66,7 @@ public class RegisterActivity extends AppCompatActivity {
         dialog.show();
     }
 
-    // Este método valida y guarda la información del dueño
+    // Este método valida y guarda la información del dueño en SQLite
     private void guardarUsuario() {
         String nombres = etNombres.getText().toString().trim();
         String apellidos = etApellidos.getText().toString().trim();
@@ -79,23 +85,31 @@ public class RegisterActivity extends AppCompatActivity {
             return;
         }
 
-        // Aquí guardo los datos del usuario en SharedPreferences
-        SharedPreferences prefs = getSharedPreferences("usuarios", MODE_PRIVATE);
-        prefs.edit()
-                .putString("correo", correo)
-                .putString("contrasena", contrasena)
-                .putString("nombres", nombres)
-                .putString("apellidos", apellidos)
-                .putString("fechaNacimiento", fecha)
-                .putString("telefono", telefono)
-                .putString("direccion", direccion)
-                .apply();
+        // Aquí valido si el correo ya existe en la base de datos
+        if (usuarioDAO.existeCorreo(correo)) {
+            tvMensajeRegistro.setText("Este correo ya está registrado.");
+            return;
+        }
 
-        tvMensajeRegistro.setText("Cuenta creada correctamente ✅. Ahora puedes iniciar sesión.");
+        // Aquí guardo el usuario en SQLite
+        long resultado = usuarioDAO.insertarUsuario(
+                nombres,
+                apellidos,
+                fecha,
+                correo,
+                contrasena,
+                telefono,
+                direccion
+        );
 
-        // Aquí redirijo al usuario a la pantalla de login
-        Intent intent = new Intent(RegisterActivity.this, LoginActivity.class);
-        startActivity(intent);
-        finish();
+        if (resultado != -1) {
+            tvMensajeRegistro.setText("Cuenta creada correctamente ✅. Ahora puedes iniciar sesión.");
+
+            Intent intent = new Intent(RegisterActivity.this, LoginActivity.class);
+            startActivity(intent);
+            finish();
+        } else {
+            tvMensajeRegistro.setText("Error al registrar el usuario.");
+        }
     }
 }

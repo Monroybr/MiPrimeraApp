@@ -1,7 +1,7 @@
 package com.liseth.miprimeraapp;
 
 import android.content.Intent;
-import android.content.SharedPreferences;
+import android.database.Cursor;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
@@ -11,32 +11,32 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
-
 import java.io.InputStream;
 
 public class PetDetailActivity extends AppCompatActivity {
 
-    // Aquí declaro los campos que mostrarán la información de la mascota
     private TextView tvNombreDetalle, tvInfoBasicaDetalle, tvCaracteristicasDetalle,
             tvVacunasDetalle, tvHistorialDetalle,
             tvSexoDetalle, tvPesoDetalle, tvColorDetalle, tvAlergiasDetalle, tvObservacionesDetalle;
 
-    // Aquí declaro la imagen de la mascota
     private ImageView imgMascotaDetalle;
 
     private Button btnEditarMascota, btnAgregarVacuna, btnCarnetVacunas,
             btnAgregarHistorial, btnVerHistorial, btnCompartirInfo;
 
-    private int index = -1;
+    private int petId = -1;
+    private int petIndex = -1;
+
+    private MascotaDAO mascotaDAO;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_pet_detail);
 
-        // Relaciono variables con elementos del XML
+        // Aquí inicializo el DAO de mascotas
+        mascotaDAO = new MascotaDAO(this);
+
         imgMascotaDetalle = findViewById(R.id.imgMascotaDetalle);
 
         tvNombreDetalle = findViewById(R.id.tvNombreDetalle);
@@ -58,189 +58,124 @@ public class PetDetailActivity extends AppCompatActivity {
         btnVerHistorial = findViewById(R.id.btnVerHistorial);
         btnCompartirInfo = findViewById(R.id.btnCompartirInfo);
 
-        // Aquí recibo el índice de la mascota seleccionada
-        index = getIntent().getIntExtra("pet_index", -1);
+        // Aquí recibo el id real de la mascota guardada en SQLite
+        petId = getIntent().getIntExtra("pet_id", -1);
 
-        if (index == -1) {
+        // Mantengo el índice mientras vacunas e historial siguen en la fase anterior
+        petIndex = getIntent().getIntExtra("pet_index", -1);
+
+        if (petId == -1) {
             mostrarMascotaNoEncontrada();
             return;
         }
 
-        // Botón para editar mascota
         btnEditarMascota.setOnClickListener(v -> {
             Intent intent = new Intent(PetDetailActivity.this, AddPetActivity.class);
-            intent.putExtra("pet_index", index);
             intent.putExtra("modo_edicion", true);
+            intent.putExtra("pet_id", petId);
             startActivity(intent);
         });
 
-        // Botón para agregar vacuna
         btnAgregarVacuna.setOnClickListener(v -> {
             Intent intent = new Intent(PetDetailActivity.this, AddVacunacionActivity.class);
-            intent.putExtra("pet_index", index);
+            intent.putExtra("pet_index", petIndex);
             startActivity(intent);
         });
 
-        // Botón para ver carnet de vacunas
         btnCarnetVacunas.setOnClickListener(v -> {
             Intent intent = new Intent(PetDetailActivity.this, VacunasListActivity.class);
-            intent.putExtra("pet_index", index);
+            intent.putExtra("pet_index", petIndex);
             startActivity(intent);
         });
 
-        // Botón para agregar historial clínico
         btnAgregarHistorial.setOnClickListener(v -> {
             Intent intent = new Intent(PetDetailActivity.this, AddHistorialActivity.class);
-            intent.putExtra("pet_index", index);
+            intent.putExtra("pet_index", petIndex);
             startActivity(intent);
         });
 
-        // Botón para ver historial clínico
         btnVerHistorial.setOnClickListener(v -> {
             Intent intent = new Intent(PetDetailActivity.this, HistorialListActivity.class);
-            intent.putExtra("pet_index", index);
+            intent.putExtra("pet_index", petIndex);
             startActivity(intent);
         });
 
-        // Botón para compartir información
         btnCompartirInfo.setOnClickListener(v -> {
             Intent intent = new Intent(PetDetailActivity.this, SharePetInfoActivity.class);
-            intent.putExtra("pet_index", index);
+            intent.putExtra("pet_index", petIndex);
+            intent.putExtra("pet_id", petId);
             startActivity(intent);
         });
 
-        cargarMascotaPorIndice(index);
+        cargarMascotaPorId(petId);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
 
-        // Cada vez que regreso a esta pantalla, actualizo los datos
-        if (index != -1) {
-            cargarMascotaPorIndice(index);
+        // Al regresar a esta pantalla, actualizo la información desde SQLite
+        if (petId != -1) {
+            cargarMascotaPorId(petId);
         }
     }
 
-    // Este metodo carga toda la información de la mascota seleccionada
-    private void cargarMascotaPorIndice(int index) {
-        SharedPreferences prefs = getSharedPreferences("mascotas", MODE_PRIVATE);
-        String json = prefs.getString("mascotas_json", "[]");
+    // Este metodo carga la información de la mascota desde SQLite
+    private void cargarMascotaPorId(int id) {
+        Cursor cursor = mascotaDAO.obtenerMascotaPorId(id);
 
         try {
-            JSONArray arr = new JSONArray(json);
+            if (cursor != null && cursor.moveToFirst()) {
+                String nombre = cursor.getString(cursor.getColumnIndexOrThrow("nombre"));
+                String fecha = cursor.getString(cursor.getColumnIndexOrThrow("fecha_nacimiento"));
+                String edad = cursor.getString(cursor.getColumnIndexOrThrow("edad_texto"));
+                String raza = cursor.getString(cursor.getColumnIndexOrThrow("raza"));
+                String carac = cursor.getString(cursor.getColumnIndexOrThrow("caracteristicas"));
+                String sexo = cursor.getString(cursor.getColumnIndexOrThrow("sexo"));
+                String peso = cursor.getString(cursor.getColumnIndexOrThrow("peso"));
+                String color = cursor.getString(cursor.getColumnIndexOrThrow("color"));
+                String alergias = cursor.getString(cursor.getColumnIndexOrThrow("alergias"));
+                String observaciones = cursor.getString(cursor.getColumnIndexOrThrow("observaciones"));
+                String imagenUri = cursor.getString(cursor.getColumnIndexOrThrow("imagen_uri"));
 
-            if (index < 0 || index >= arr.length()) {
-                mostrarMascotaNoEncontrada();
-                return;
-            }
+                tvNombreDetalle.setText(nombre == null || nombre.isEmpty() ? "Sin nombre" : nombre);
+                tvInfoBasicaDetalle.setText(raza + " • " + fecha + " • " + edad);
+                tvCaracteristicasDetalle.setText("Características: " + (carac == null || carac.isEmpty() ? "-" : carac));
+                tvSexoDetalle.setText("Sexo: " + (sexo == null || sexo.isEmpty() ? "-" : sexo));
+                tvPesoDetalle.setText("Peso: " + (peso == null || peso.isEmpty() ? "-" : peso + " kg"));
+                tvColorDetalle.setText("Color: " + (color == null || color.isEmpty() ? "-" : color));
+                tvAlergiasDetalle.setText("Alergias: " + (alergias == null || alergias.isEmpty() ? "-" : alergias));
+                tvObservacionesDetalle.setText("Observaciones: " + (observaciones == null || observaciones.isEmpty() ? "-" : observaciones));
 
-            JSONObject obj = arr.getJSONObject(index);
+                // Estas secciones se migrarán después a SQLite en la siguiente fase
+                tvVacunasDetalle.setText("Vacunas registradas: se migrarán en la siguiente fase");
+                tvHistorialDetalle.setText("Registros clínicos: se migrarán en la siguiente fase");
 
-            String nombre = obj.optString("nombre", "");
-            String fecha = obj.optString("fechaNacimiento", "-");
-            String edad = obj.optString("edadTexto", "-");
-            String raza = obj.optString("raza", "-");
-            String carac = obj.optString("caracteristicas", "");
-            String sexo = obj.optString("sexo", "");
-            String peso = obj.optString("peso", "");
-            String color = obj.optString("color", "");
-            String alergias = obj.optString("alergias", "");
-            String observaciones = obj.optString("observaciones", "");
-            String imagenUri = obj.optString("imagenUri", "");
-
-            tvNombreDetalle.setText(nombre.isEmpty() ? "Sin nombre" : nombre);
-            tvInfoBasicaDetalle.setText(raza + " • " + fecha + " • " + edad);
-            tvCaracteristicasDetalle.setText("Características: " + (carac.isEmpty() ? "-" : carac));
-            tvSexoDetalle.setText("Sexo: " + (sexo.isEmpty() ? "-" : sexo));
-            tvPesoDetalle.setText("Peso: " + (peso.isEmpty() ? "-" : peso + " kg"));
-            tvColorDetalle.setText("Color: " + (color.isEmpty() ? "-" : color));
-            tvAlergiasDetalle.setText("Alergias: " + (alergias.isEmpty() ? "-" : alergias));
-            tvObservacionesDetalle.setText("Observaciones: " + (observaciones.isEmpty() ? "-" : observaciones));
-
-            // Aquí muestro la foto si existe
-            if (!imagenUri.isEmpty()) {
-                try {
-                    Uri uri = Uri.parse(imagenUri);
-                    InputStream inputStream = getContentResolver().openInputStream(uri);
-                    imgMascotaDetalle.setImageBitmap(BitmapFactory.decodeStream(inputStream));
-                } catch (Exception ignored) {
+                // Aquí cargo la foto de la mascota si existe
+                if (imagenUri != null && !imagenUri.isEmpty()) {
+                    try {
+                        Uri uri = Uri.parse(imagenUri);
+                        InputStream inputStream = getContentResolver().openInputStream(uri);
+                        imgMascotaDetalle.setImageBitmap(BitmapFactory.decodeStream(inputStream));
+                    } catch (Exception ignored) {
+                        imgMascotaDetalle.setImageResource(R.mipmap.ic_launcher);
+                    }
+                } else {
                     imgMascotaDetalle.setImageResource(R.mipmap.ic_launcher);
                 }
             } else {
-                imgMascotaDetalle.setImageResource(R.mipmap.ic_launcher);
+                mostrarMascotaNoEncontrada();
             }
-
-            int totalVacunas = contarVacunasDeMascota(index);
-            int totalHistorial = contarHistorialDeMascota(index);
-
-            tvVacunasDetalle.setText("Vacunas registradas: " + totalVacunas);
-            tvHistorialDetalle.setText("Registros clínicos: " + totalHistorial);
-
         } catch (Exception e) {
-            tvNombreDetalle.setText("Error cargando mascota");
-            tvInfoBasicaDetalle.setText("-");
-            tvCaracteristicasDetalle.setText("Características: -");
-            tvSexoDetalle.setText("Sexo: -");
-            tvPesoDetalle.setText("Peso: -");
-            tvColorDetalle.setText("Color: -");
-            tvAlergiasDetalle.setText("Alergias: -");
-            tvObservacionesDetalle.setText("Observaciones: -");
-            tvVacunasDetalle.setText("Vacunas registradas: 0");
-            tvHistorialDetalle.setText("Registros clínicos: 0");
-            imgMascotaDetalle.setImageResource(R.mipmap.ic_launcher);
-        }
-    }
-
-    // Aquí cuento cuántas vacunas tiene registradas la mascota
-    private int contarVacunasDeMascota(int petIndex) {
-        int total = 0;
-
-        SharedPreferences prefs = getSharedPreferences("vacunas", MODE_PRIVATE);
-        String json = prefs.getString("vacunas_json", "[]");
-
-        try {
-            JSONArray arr = new JSONArray(json);
-
-            for (int i = 0; i < arr.length(); i++) {
-                JSONObject obj = arr.getJSONObject(i);
-                int idx = obj.optInt("pet_index", -1);
-
-                if (idx == petIndex) {
-                    total++;
-                }
+            mostrarMascotaNoEncontrada();
+        } finally {
+            if (cursor != null) {
+                cursor.close();
             }
-        } catch (Exception ignored) {
         }
-
-        return total;
     }
 
-    // Aquí cuento cuántos registros clínicos tiene la mascota
-    private int contarHistorialDeMascota(int petIndex) {
-        int total = 0;
-
-        SharedPreferences prefs = getSharedPreferences("historial", MODE_PRIVATE);
-        String json = prefs.getString("historial_json", "[]");
-
-        try {
-            JSONArray arr = new JSONArray(json);
-
-            for (int i = 0; i < arr.length(); i++) {
-                JSONObject obj = arr.getJSONObject(i);
-                int idx = obj.optInt("pet_index", -1);
-
-                if (idx == petIndex) {
-                    total++;
-                }
-            }
-        } catch (Exception ignored) {
-        }
-
-        return total;
-    }
-
-    // Este metodo muestra un estado por defecto si la mascota no existe
+    // Este metodo muestra información por defecto si no se encuentra la mascota
     private void mostrarMascotaNoEncontrada() {
         tvNombreDetalle.setText("Mascota no encontrada");
         tvInfoBasicaDetalle.setText("-");
