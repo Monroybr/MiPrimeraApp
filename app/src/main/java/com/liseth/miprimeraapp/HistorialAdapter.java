@@ -57,10 +57,12 @@ public class HistorialAdapter extends RecyclerView.Adapter<HistorialAdapter.Hist
     }
 
     static class HistorialViewHolder extends RecyclerView.ViewHolder {
+
         TextView tvFechaHist, tvEnfermedadesHist, tvMedicacionHist, tvProcedimientosHist;
 
         public HistorialViewHolder(@NonNull View itemView) {
             super(itemView);
+
             tvFechaHist = itemView.findViewById(R.id.tvFechaHist);
             tvEnfermedadesHist = itemView.findViewById(R.id.tvEnfermedadesHist);
             tvMedicacionHist = itemView.findViewById(R.id.tvMedicacionHist);

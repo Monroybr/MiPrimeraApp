@@ -1,7 +1,7 @@
 package com.liseth.miprimeraapp;
 
 import android.content.Intent;
-import android.content.SharedPreferences;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Paint;
@@ -14,9 +14,6 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.FileProvider;
-
-import org.json.JSONArray;
-import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -31,7 +28,9 @@ public class SharePetInfoActivity extends AppCompatActivity {
     private CheckBox cbVacunas, cbHistorial;
     private Button btnGenerarCompartirPdf;
 
-    private int petIndex = -1;
+    // Aquí recibo el id real de la mascota en SQLite
+    private int petId = -1;
+
     private String nombreMascota = "Mascota";
     private String edadMascota = "-";
     private String razaMascota = "-";
@@ -43,15 +42,26 @@ public class SharePetInfoActivity extends AppCompatActivity {
     private String observacionesMascota = "-";
     private String imagenMascotaUri = "";
 
-    private String nombreDueno = "-";
+    // Por ahora dejo estos datos del dueño como valores por defecto
+    private String nombreDueno = "No registrado";
     private String telefonoDueno = "-";
     private String correoDueno = "-";
     private String direccionDueno = "-";
+
+    private MascotaDAO mascotaDAO;
+    private VacunaDAO vacunaDAO;
+    private HistorialDAO historialDAO;
+    private CitaDAO citaDAO;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_share_pet_info);
+
+        mascotaDAO = new MascotaDAO(this);
+        vacunaDAO = new VacunaDAO(this);
+        historialDAO = new HistorialDAO(this);
+        citaDAO = new CitaDAO(this);
 
         tvNombreMascotaShare = findViewById(R.id.tvNombreMascotaShare);
         tvMensajeShare = findViewById(R.id.tvMensajeShare);
@@ -59,62 +69,48 @@ public class SharePetInfoActivity extends AppCompatActivity {
         cbHistorial = findViewById(R.id.cbHistorial);
         btnGenerarCompartirPdf = findViewById(R.id.btnGenerarCompartirPdf);
 
-        petIndex = getIntent().getIntExtra("pet_index", -1);
+        petId = getIntent().getIntExtra("pet_id", -1);
 
-        if (petIndex == -1) {
+        if (petId == -1) {
             tvMensajeShare.setText("No se pudo identificar la mascota.");
             btnGenerarCompartirPdf.setEnabled(false);
             return;
         }
 
-        cargarDatosMascota(petIndex);
-        cargarDatosDueno();
+        cargarDatosMascotaDesdeSQLite(petId);
 
         tvNombreMascotaShare.setText("Mascota: " + nombreMascota);
 
         btnGenerarCompartirPdf.setOnClickListener(v -> generarYCompartirPdf());
     }
 
-    private void cargarDatosMascota(int index) {
-        SharedPreferences prefs = getSharedPreferences("mascotas", MODE_PRIVATE);
-        String json = prefs.getString("mascotas_json", "[]");
+    // Este metodo carga los datos de la mascota desde SQLite
+    private void cargarDatosMascotaDesdeSQLite(int id) {
+        Cursor cursor = mascotaDAO.obtenerMascotaPorId(id);
 
         try {
-            JSONArray arr = new JSONArray(json);
+            if (cursor != null && cursor.moveToFirst()) {
+                nombreMascota = obtenerValorSeguro(cursor.getString(cursor.getColumnIndexOrThrow("nombre")));
+                edadMascota = obtenerValorSeguro(cursor.getString(cursor.getColumnIndexOrThrow("edad_texto")));
+                razaMascota = obtenerValorSeguro(cursor.getString(cursor.getColumnIndexOrThrow("raza")));
+                sexoMascota = obtenerValorSeguro(cursor.getString(cursor.getColumnIndexOrThrow("sexo")));
+                pesoMascota = obtenerValorSeguro(cursor.getString(cursor.getColumnIndexOrThrow("peso")));
+                colorMascota = obtenerValorSeguro(cursor.getString(cursor.getColumnIndexOrThrow("color")));
+                alergiasMascota = obtenerValorSeguro(cursor.getString(cursor.getColumnIndexOrThrow("alergias")));
+                caracteristicasMascota = obtenerValorSeguro(cursor.getString(cursor.getColumnIndexOrThrow("caracteristicas")));
+                observacionesMascota = obtenerValorSeguro(cursor.getString(cursor.getColumnIndexOrThrow("observaciones")));
+                imagenMascotaUri = obtenerValorSeguro(cursor.getString(cursor.getColumnIndexOrThrow("imagen_uri")));
 
-            if (index >= 0 && index < arr.length()) {
-                JSONObject obj = arr.getJSONObject(index);
-
-                nombreMascota = obtenerValorSeguro(obj.optString("nombre", "Mascota"));
-                edadMascota = obtenerValorSeguro(obj.optString("edadTexto", "-"));
-                razaMascota = obtenerValorSeguro(obj.optString("raza", "-"));
-                sexoMascota = obtenerValorSeguro(obj.optString("sexo", "-"));
-                pesoMascota = obtenerValorSeguro(obj.optString("peso", "-"));
-                colorMascota = obtenerValorSeguro(obj.optString("color", "-"));
-                alergiasMascota = obtenerValorSeguro(obj.optString("alergias", "-"));
-                caracteristicasMascota = obtenerValorSeguro(obj.optString("caracteristicas", "-"));
-                observacionesMascota = obtenerValorSeguro(obj.optString("observaciones", "-"));
-                imagenMascotaUri = obj.optString("imagenUri", "");
+                if (imagenMascotaUri.equals("-")) {
+                    imagenMascotaUri = "";
+                }
             }
         } catch (Exception ignored) {
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
         }
-    }
-
-    private void cargarDatosDueno() {
-        SharedPreferences prefs = getSharedPreferences("usuarios", MODE_PRIVATE);
-
-        String nombres = prefs.getString("nombres", "");
-        String apellidos = prefs.getString("apellidos", "");
-
-        nombreDueno = (nombres + " " + apellidos).trim();
-        telefonoDueno = prefs.getString("telefono", "-");
-        correoDueno = prefs.getString("correo", "-");
-        direccionDueno = prefs.getString("direccion", "-");
-
-        nombreDueno = nombreDueno.isEmpty() ? "No registrado" : nombreDueno;
-        telefonoDueno = obtenerValorSeguro(telefonoDueno);
-        correoDueno = obtenerValorSeguro(correoDueno);
-        direccionDueno = obtenerValorSeguro(direccionDueno);
     }
 
     private String obtenerValorSeguro(String valor) {
@@ -160,7 +156,7 @@ public class SharePetInfoActivity extends AppCompatActivity {
         page.getCanvas().drawText("Fecha de generación: " + fecha, x, y, texto);
         y += 20;
 
-        // Aquí intento dibujar la foto de la mascota en el PDF
+        // Aquí agrego la foto de la mascota si existe
         if (imagenMascotaUri != null && !imagenMascotaUri.isEmpty()) {
             try {
                 InputStream inputStream = getContentResolver().openInputStream(Uri.parse(imagenMascotaUri));
@@ -221,15 +217,20 @@ public class SharePetInfoActivity extends AppCompatActivity {
         if (cbVacunas.isChecked()) {
             page.getCanvas().drawText("CARNET DE VACUNACIÓN", x, y, subtitulo);
             y += espacio;
-            y = escribirVacunas(page, x, y, espacio, texto);
+            y = escribirVacunasDesdeSQLite(page, x, y, espacio, texto);
             y += 15;
         }
 
         if (cbHistorial.isChecked()) {
             page.getCanvas().drawText("HISTORIAL MÉDICO", x, y, subtitulo);
             y += espacio;
-            y = escribirHistorial(page, x, y, espacio, texto);
+            y = escribirHistorialDesdeSQLite(page, x, y, espacio, texto);
+            y += 15;
         }
+
+        page.getCanvas().drawText("CITAS VETERINARIAS", x, y, subtitulo);
+        y += espacio;
+        y = escribirCitasDesdeSQLite(page, x, y, espacio, texto);
 
         document.finishPage(page);
 
@@ -255,31 +256,32 @@ public class SharePetInfoActivity extends AppCompatActivity {
         }
     }
 
-    private int escribirVacunas(PdfDocument.Page page, int x, int y, int espacio, Paint paint) {
-        SharedPreferences prefs = getSharedPreferences("vacunas", MODE_PRIVATE);
-        String json = prefs.getString("vacunas_json", "[]");
+    // Este metodo escribe las vacunas registradas desde SQLite
+    private int escribirVacunasDesdeSQLite(PdfDocument.Page page, int x, int y, int espacio, Paint paint) {
         boolean encontroVacunas = false;
 
+        Cursor cursor = vacunaDAO.obtenerVacunasPorMascota(petId);
+
         try {
-            JSONArray arr = new JSONArray(json);
+            if (cursor != null && cursor.moveToFirst()) {
+                do {
+                    encontroVacunas = true;
 
-            for (int i = 0; i < arr.length(); i++) {
-                JSONObject obj = arr.getJSONObject(i);
+                    String vacuna = obtenerValorSeguro(cursor.getString(cursor.getColumnIndexOrThrow("vacuna")));
+                    String fechaAplicacion = obtenerValorSeguro(cursor.getString(cursor.getColumnIndexOrThrow("fecha_aplicacion")));
+                    String lugar = obtenerValorSeguro(cursor.getString(cursor.getColumnIndexOrThrow("lugar")));
+                    String proximaDosis = obtenerValorSeguro(cursor.getString(cursor.getColumnIndexOrThrow("proxima_dosis")));
 
-                if (obj.optInt("pet_index", -1) != petIndex) continue;
+                    page.getCanvas().drawText("• Vacuna: " + vacuna, x, y, paint);
+                    y += espacio;
+                    page.getCanvas().drawText("  Fecha aplicación: " + fechaAplicacion, x + 10, y, paint);
+                    y += espacio;
+                    page.getCanvas().drawText("  Lugar: " + lugar, x + 10, y, paint);
+                    y += espacio;
+                    page.getCanvas().drawText("  Próxima dosis: " + proximaDosis, x + 10, y, paint);
+                    y += espacio;
 
-                encontroVacunas = true;
-
-                String vacuna = obj.optString("vacuna", "-");
-                String fechaAplicacion = obj.optString("fechaAplicacion", "-");
-                String proximaDosis = obj.optString("proximaDosis", "-");
-
-                page.getCanvas().drawText("• Vacuna: " + vacuna, x, y, paint);
-                y += espacio;
-                page.getCanvas().drawText("  Fecha aplicación: " + fechaAplicacion, x + 10, y, paint);
-                y += espacio;
-                page.getCanvas().drawText("  Próxima dosis: " + proximaDosis, x + 10, y, paint);
-                y += espacio;
+                } while (cursor.moveToNext());
             }
 
             if (!encontroVacunas) {
@@ -288,39 +290,44 @@ public class SharePetInfoActivity extends AppCompatActivity {
             }
 
         } catch (Exception ignored) {
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
         }
 
         return y;
     }
 
-    private int escribirHistorial(PdfDocument.Page page, int x, int y, int espacio, Paint paint) {
-        SharedPreferences prefs = getSharedPreferences("historial", MODE_PRIVATE);
-        String json = prefs.getString("historial_json", "[]");
+    // Este metodo escribe el historial médico desde SQLite
+    private int escribirHistorialDesdeSQLite(PdfDocument.Page page, int x, int y, int espacio, Paint paint) {
         boolean encontroHistorial = false;
 
+        Cursor cursor = historialDAO.obtenerHistorialPorMascota(petId);
+
         try {
-            JSONArray arr = new JSONArray(json);
+            if (cursor != null && cursor.moveToFirst()) {
+                do {
+                    encontroHistorial = true;
 
-            for (int i = 0; i < arr.length(); i++) {
-                JSONObject obj = arr.getJSONObject(i);
+                    String fechaRegistro = obtenerValorSeguro(cursor.getString(cursor.getColumnIndexOrThrow("fecha_registro")));
+                    String enfermedades = obtenerValorSeguro(cursor.getString(cursor.getColumnIndexOrThrow("enfermedades")));
+                    String procedimientos = obtenerValorSeguro(cursor.getString(cursor.getColumnIndexOrThrow("procedimientos")));
+                    String medicacion = obtenerValorSeguro(cursor.getString(cursor.getColumnIndexOrThrow("medicacion")));
+                    String observaciones = obtenerValorSeguro(cursor.getString(cursor.getColumnIndexOrThrow("observaciones")));
 
-                if (obj.optInt("pet_index", -1) != petIndex) continue;
+                    page.getCanvas().drawText("• Fecha: " + fechaRegistro, x, y, paint);
+                    y += espacio;
+                    page.getCanvas().drawText("  Enfermedades: " + enfermedades, x + 10, y, paint);
+                    y += espacio;
+                    page.getCanvas().drawText("  Procedimientos: " + procedimientos, x + 10, y, paint);
+                    y += espacio;
+                    page.getCanvas().drawText("  Medicación: " + medicacion, x + 10, y, paint);
+                    y += espacio;
+                    page.getCanvas().drawText("  Observaciones: " + observaciones, x + 10, y, paint);
+                    y += espacio;
 
-                encontroHistorial = true;
-
-                String fechaRegistro = obj.optString("fechaRegistro", "-");
-                String enfermedades = obj.optString("enfermedades", "-");
-                String procedimientos = obj.optString("procedimientos", "-");
-                String medicacion = obj.optString("medicacion", "-");
-
-                page.getCanvas().drawText("• Fecha: " + fechaRegistro, x, y, paint);
-                y += espacio;
-                page.getCanvas().drawText("  Enfermedades: " + enfermedades, x + 10, y, paint);
-                y += espacio;
-                page.getCanvas().drawText("  Procedimientos: " + procedimientos, x + 10, y, paint);
-                y += espacio;
-                page.getCanvas().drawText("  Medicación: " + medicacion, x + 10, y, paint);
-                y += espacio;
+                } while (cursor.moveToNext());
             }
 
             if (!encontroHistorial) {
@@ -329,6 +336,51 @@ public class SharePetInfoActivity extends AppCompatActivity {
             }
 
         } catch (Exception ignored) {
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
+
+        return y;
+    }
+
+    // Este metodo escribe las citas veterinarias desde SQLite
+    private int escribirCitasDesdeSQLite(PdfDocument.Page page, int x, int y, int espacio, Paint paint) {
+        boolean encontroCitas = false;
+
+        Cursor cursor = citaDAO.obtenerCitasPorMascota(petId);
+
+        try {
+            if (cursor != null && cursor.moveToFirst()) {
+                do {
+                    encontroCitas = true;
+
+                    String fecha = obtenerValorSeguro(cursor.getString(cursor.getColumnIndexOrThrow("fecha")));
+                    String hora = obtenerValorSeguro(cursor.getString(cursor.getColumnIndexOrThrow("hora")));
+                    String veterinaria = obtenerValorSeguro(cursor.getString(cursor.getColumnIndexOrThrow("veterinaria")));
+                    String motivo = obtenerValorSeguro(cursor.getString(cursor.getColumnIndexOrThrow("motivo")));
+
+                    page.getCanvas().drawText("• Fecha: " + fecha + " - Hora: " + hora, x, y, paint);
+                    y += espacio;
+                    page.getCanvas().drawText("  Veterinaria: " + veterinaria, x + 10, y, paint);
+                    y += espacio;
+                    page.getCanvas().drawText("  Motivo: " + motivo, x + 10, y, paint);
+                    y += espacio;
+
+                } while (cursor.moveToNext());
+            }
+
+            if (!encontroCitas) {
+                page.getCanvas().drawText("No hay citas veterinarias registradas.", x, y, paint);
+                y += espacio;
+            }
+
+        } catch (Exception ignored) {
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
         }
 
         return y;

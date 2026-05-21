@@ -21,21 +21,19 @@ public class CitaAdapter extends RecyclerView.Adapter<CitaAdapter.CitaViewHolder
     @NonNull
     @Override
     public CitaViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        // Aquí inflo el diseño de cada tarjeta de cita
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_cita, parent, false);
+        View view = LayoutInflater.from(parent.getContext())
+                .inflate(R.layout.item_cita, parent, false);
+
         return new CitaViewHolder(view);
     }
 
     @Override
     public void onBindViewHolder(@NonNull CitaViewHolder holder, int position) {
-        // Aquí obtengo la cita correspondiente a la posición actual
         Cita cita = lista.get(position);
 
-        // Aquí muestro la información de la cita en pantalla
-        holder.tvMascotaCita.setText("Mascota: " + cita.nombreMascota);
         holder.tvFechaHoraCita.setText("Fecha: " + cita.fecha + " - Hora: " + cita.hora);
-        holder.tvVeterinariaCita.setText("Veterinaria: " + cita.veterinaria);
-        holder.tvMotivoCita.setText("Motivo: " + cita.motivo);
+        holder.tvVeterinariaCita.setText("Veterinaria: " + (cita.veterinaria == null || cita.veterinaria.isEmpty() ? "-" : cita.veterinaria));
+        holder.tvMotivoCita.setText("Motivo: " + (cita.motivo == null || cita.motivo.isEmpty() ? "-" : cita.motivo));
     }
 
     @Override
@@ -45,12 +43,11 @@ public class CitaAdapter extends RecyclerView.Adapter<CitaAdapter.CitaViewHolder
 
     static class CitaViewHolder extends RecyclerView.ViewHolder {
 
-        TextView tvMascotaCita, tvFechaHoraCita, tvVeterinariaCita, tvMotivoCita;
+        TextView tvFechaHoraCita, tvVeterinariaCita, tvMotivoCita;
 
         public CitaViewHolder(@NonNull View itemView) {
             super(itemView);
 
-            tvMascotaCita = itemView.findViewById(R.id.tvMascotaCita);
             tvFechaHoraCita = itemView.findViewById(R.id.tvFechaHoraCita);
             tvVeterinariaCita = itemView.findViewById(R.id.tvVeterinariaCita);
             tvMotivoCita = itemView.findViewById(R.id.tvMotivoCita);

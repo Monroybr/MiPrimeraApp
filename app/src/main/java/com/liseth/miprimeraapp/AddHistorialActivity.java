@@ -1,7 +1,7 @@
 package com.liseth.miprimeraapp;
 
 import android.app.DatePickerDialog;
-import android.content.SharedPreferences;
+import android.database.Cursor;
 import android.os.Bundle;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -10,9 +10,6 @@ import android.widget.Spinner;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
-
-import org.json.JSONArray;
-import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -25,15 +22,26 @@ public class AddHistorialActivity extends AppCompatActivity {
     private Button btnGuardarHistorial;
     private TextView tvMensajeHistorial;
 
+    // Estas listas me permiten cargar las mascotas desde SQLite en el Spinner
     private final ArrayList<String> mascotasNombres = new ArrayList<>();
-    private final ArrayList<Integer> mascotasIndex = new ArrayList<>();
+    private final ArrayList<Integer> mascotasIds = new ArrayList<>();
 
     private Calendar fechaRegistroCal = null;
+
+    // Aquí declaro los DAO que voy a usar
+    private MascotaDAO mascotaDAO;
+    private HistorialDAO historialDAO;
+
+    // Aquí recibo el id real de la mascota cuando vengo desde el detalle
+    private int petIdRecibido = -1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_add_historial);
+
+        mascotaDAO = new MascotaDAO(this);
+        historialDAO = new HistorialDAO(this);
 
         spMascotasHist = findViewById(R.id.spMascotasHist);
         etFechaRegistroHist = findViewById(R.id.etFechaRegistroHist);
@@ -43,16 +51,12 @@ public class AddHistorialActivity extends AppCompatActivity {
         btnGuardarHistorial = findViewById(R.id.btnGuardarHistorial);
         tvMensajeHistorial = findViewById(R.id.tvMensajeHistorial);
 
+        // Recibo el id real de SQLite si la pantalla se abrió desde PetDetailActivity
+        petIdRecibido = getIntent().getIntExtra("pet_id", -1);
+
         cargarMascotasEnSpinner();
+        seleccionarMascotaRecibida();
 
-        // Si venimos desde PetDetailActivity
-        int petIndexFromDetail = getIntent().getIntExtra("pet_index", -1);
-        if (petIndexFromDetail != -1) {
-            int pos = mascotasIndex.indexOf(petIndexFromDetail);
-            if (pos != -1) spMascotasHist.setSelection(pos);
-        }
-
-        // Fecha por defecto: hoy (opcional)
         setFechaHoy();
 
         etFechaRegistroHist.setOnClickListener(v -> mostrarDatePicker());
@@ -60,19 +64,22 @@ public class AddHistorialActivity extends AppCompatActivity {
         btnGuardarHistorial.setOnClickListener(v -> guardarHistorial());
     }
 
+    // Este metodo coloca la fecha actual por defecto
     private void setFechaHoy() {
         Calendar c = Calendar.getInstance();
         fechaRegistroCal = (Calendar) c.clone();
+
         String fecha = String.format(Locale.getDefault(), "%02d/%02d/%04d",
-                c.get(Calendar.DAY_OF_MONTH), (c.get(Calendar.MONTH) + 1), c.get(Calendar.YEAR));
+                c.get(Calendar.DAY_OF_MONTH),
+                (c.get(Calendar.MONTH) + 1),
+                c.get(Calendar.YEAR));
+
         etFechaRegistroHist.setText(fecha);
     }
 
+    // Este metodo muestra el calendario para seleccionar la fecha del registro
     private void mostrarDatePicker() {
         Calendar c = Calendar.getInstance();
-        int year = c.get(Calendar.YEAR);
-        int month = c.get(Calendar.MONTH);
-        int day = c.get(Calendar.DAY_OF_MONTH);
 
         DatePickerDialog dialog = new DatePickerDialog(this, (view, y, m, d) -> {
             fechaRegistroCal = Calendar.getInstance();
@@ -80,40 +87,75 @@ public class AddHistorialActivity extends AppCompatActivity {
 
             String fecha = String.format(Locale.getDefault(), "%02d/%02d/%04d", d, (m + 1), y);
             etFechaRegistroHist.setText(fecha);
-        }, year, month, day);
+
+        }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH));
 
         dialog.show();
     }
 
+    // Este metodo carga las mascotas desde SQLite
     private void cargarMascotasEnSpinner() {
         mascotasNombres.clear();
-        mascotasIndex.clear();
+        mascotasIds.clear();
 
-        SharedPreferences prefs = getSharedPreferences("mascotas", MODE_PRIVATE);
-        String json = prefs.getString("mascotas_json", "[]");
+        Cursor cursor = mascotaDAO.obtenerMascotas();
 
         try {
-            JSONArray arr = new JSONArray(json);
-            for (int i = 0; i < arr.length(); i++) {
-                JSONObject obj = arr.getJSONObject(i);
-                String nombre = obj.optString("nombre", "Mascota " + (i + 1));
-                mascotasNombres.add(nombre);
-                mascotasIndex.add(i);
+            if (cursor != null && cursor.moveToFirst()) {
+                do {
+                    int id = cursor.getInt(cursor.getColumnIndexOrThrow("id"));
+                    String nombre = cursor.getString(cursor.getColumnIndexOrThrow("nombre"));
+
+                    mascotasIds.add(id);
+                    mascotasNombres.add(nombre);
+
+                } while (cursor.moveToNext());
             }
-        } catch (Exception ignored) { }
+        } catch (Exception ignored) {
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
 
         if (mascotasNombres.isEmpty()) {
             mascotasNombres.add("No hay mascotas registradas");
-            mascotasIndex.add(-1);
+            mascotasIds.add(-1);
         }
 
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, mascotasNombres);
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                this,
+                android.R.layout.simple_spinner_dropdown_item,
+                mascotasNombres
+        );
+
         spMascotasHist.setAdapter(adapter);
     }
 
+    // Este metodo selecciona automáticamente la mascota si vengo desde el detalle
+    private void seleccionarMascotaRecibida() {
+        if (petIdRecibido == -1) return;
+
+        for (int i = 0; i < mascotasIds.size(); i++) {
+            if (mascotasIds.get(i) == petIdRecibido) {
+                spMascotasHist.setSelection(i);
+                break;
+            }
+        }
+    }
+
+    // Este metodo guarda el historial clínico en SQLite
     private void guardarHistorial() {
-        int idxMascota = mascotasIndex.get(spMascotasHist.getSelectedItemPosition());
-        if (idxMascota == -1) {
+        int posicionMascota = spMascotasHist.getSelectedItemPosition();
+
+        if (posicionMascota < 0 || mascotasIds.isEmpty()) {
+            tvMensajeHistorial.setText("Primero registra una mascota.");
+            return;
+        }
+
+        int mascotaId = mascotasIds.get(posicionMascota);
+
+        if (mascotaId == -1) {
             tvMensajeHistorial.setText("Primero registra una mascota.");
             return;
         }
@@ -129,31 +171,23 @@ public class AddHistorialActivity extends AppCompatActivity {
         }
 
         if (enfermedades.isEmpty() && procedimientos.isEmpty() && medicacion.isEmpty()) {
-            tvMensajeHistorial.setText("Escribe al menos un dato (enfermedades, procedimientos o medicación).");
+            tvMensajeHistorial.setText("Escribe al menos un dato: enfermedades, procedimientos o medicación.");
             return;
         }
 
-        SharedPreferences prefs = getSharedPreferences("historial", MODE_PRIVATE);
-        String json = prefs.getString("historial_json", "[]");
+        long resultado = historialDAO.insertarHistorial(
+                mascotaId,
+                fechaRegistro,
+                enfermedades,
+                procedimientos,
+                medicacion,
+                ""
+        );
 
-        try {
-            JSONArray arr = new JSONArray(json);
-
-            JSONObject obj = new JSONObject();
-            obj.put("pet_index", idxMascota);
-            obj.put("fechaRegistro", fechaRegistro);
-            obj.put("enfermedades", enfermedades);
-            obj.put("procedimientos", procedimientos);
-            obj.put("medicacion", medicacion);
-
-            arr.put(obj);
-
-            prefs.edit().putString("historial_json", arr.toString()).apply();
-
+        if (resultado != -1) {
             tvMensajeHistorial.setText("Historial guardado ✅");
             finish();
-
-        } catch (Exception e) {
+        } else {
             tvMensajeHistorial.setText("Error guardando historial.");
         }
     }

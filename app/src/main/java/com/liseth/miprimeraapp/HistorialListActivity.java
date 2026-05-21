@@ -1,17 +1,15 @@
 package com.liseth.miprimeraapp;
 
 import android.content.Intent;
-import android.content.SharedPreferences;
+import android.database.Cursor;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-
-import org.json.JSONArray;
-import org.json.JSONObject;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -24,7 +22,10 @@ public class HistorialListActivity extends AppCompatActivity {
     private RecyclerView rvHistorial;
     private TextView tvVacioHistorial;
 
-    private int petIndex = -1;
+    // Aquí recibo el id real de la mascota desde SQLite
+    private int petId = -1;
+
+    private HistorialDAO historialDAO;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,58 +35,83 @@ public class HistorialListActivity extends AppCompatActivity {
         rvHistorial = findViewById(R.id.rvHistorial);
         tvVacioHistorial = findViewById(R.id.tvVacioHistorial);
 
+        historialDAO = new HistorialDAO(this);
+
         rvHistorial.setLayoutManager(new LinearLayoutManager(this));
 
-        petIndex = getIntent().getIntExtra("pet_index", -1);
+        petId = getIntent().getIntExtra("pet_id", -1);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
 
-        ArrayList<Historial> lista = cargarHistorialDeMascota(petIndex);
+        if (petId == -1) {
+            tvVacioHistorial.setVisibility(View.VISIBLE);
+            tvVacioHistorial.setText("No se pudo identificar la mascota.");
+            rvHistorial.setAdapter(new HistorialAdapter(new ArrayList<>(), null));
+
+            Toast.makeText(this, "Error: no llegó pet_id desde PetDetailActivity", Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        ArrayList<Historial> lista = cargarHistorialDeMascota(petId);
 
         ordenarPorFechaDesc(lista);
 
         tvVacioHistorial.setVisibility(lista.isEmpty() ? View.VISIBLE : View.GONE);
 
         rvHistorial.setAdapter(new HistorialAdapter(lista, (pos, item) -> {
-            // Abre el  detalle del registro usando índice REAL del JSON
             Intent intent = new Intent(HistorialListActivity.this, HistorialDetailActivity.class);
-            intent.putExtra("hist_global_index", item.globalIndex);
+
+            // Aquí envío el id real del historial guardado en SQLite
+            intent.putExtra("historial_id", item.id);
+
             startActivity(intent);
         }));
     }
 
-    private ArrayList<Historial> cargarHistorialDeMascota(int petIndex) {
+    // Este metodo carga desde SQLite el historial clínico de la mascota seleccionada
+    private ArrayList<Historial> cargarHistorialDeMascota(int mascotaId) {
         ArrayList<Historial> lista = new ArrayList<>();
-        if (petIndex == -1) return lista;
 
-        SharedPreferences prefs = getSharedPreferences("historial", MODE_PRIVATE);
-        String json = prefs.getString("historial_json", "[]");
+        Cursor cursor = historialDAO.obtenerHistorialPorMascota(mascotaId);
 
         try {
-            JSONArray arr = new JSONArray(json);
+            if (cursor != null && cursor.moveToFirst()) {
+                do {
+                    int id = cursor.getInt(cursor.getColumnIndexOrThrow("id"));
+                    int mascota = cursor.getInt(cursor.getColumnIndexOrThrow("mascota_id"));
+                    String fecha = cursor.getString(cursor.getColumnIndexOrThrow("fecha_registro"));
+                    String enfermedades = cursor.getString(cursor.getColumnIndexOrThrow("enfermedades"));
+                    String procedimientos = cursor.getString(cursor.getColumnIndexOrThrow("procedimientos"));
+                    String medicacion = cursor.getString(cursor.getColumnIndexOrThrow("medicacion"));
+                    String observaciones = cursor.getString(cursor.getColumnIndexOrThrow("observaciones"));
 
-            for (int i = 0; i < arr.length(); i++) {
-                JSONObject obj = arr.getJSONObject(i);
+                    lista.add(new Historial(
+                            id,
+                            mascota,
+                            fecha,
+                            enfermedades,
+                            procedimientos,
+                            medicacion,
+                            observaciones
+                    ));
 
-                int idx = obj.optInt("pet_index", -1);
-                if (idx != petIndex) continue;
-
-                String fecha = obj.optString("fechaRegistro", "");
-                String enf = obj.optString("enfermedades", "");
-                String proc = obj.optString("procedimientos", "");
-                String med = obj.optString("medicacion", "");
-
-                // ✅ i = índice real dentro del historial_json
-                lista.add(new Historial(idx, i, fecha, enf, proc, med));
+                } while (cursor.moveToNext());
             }
-        } catch (Exception ignored) { }
+
+        } catch (Exception ignored) {
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
 
         return lista;
     }
 
+    // Este metodo ordena los registros por fecha descendente
     private void ordenarPorFechaDesc(ArrayList<Historial> lista) {
         SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
 
@@ -98,7 +124,8 @@ public class HistorialListActivity extends AppCompatActivity {
                 if (da == null) return 1;
                 if (db == null) return -1;
 
-                return db.compareTo(da); // DESC
+                return db.compareTo(da);
+
             } catch (Exception e) {
                 return 0;
             }

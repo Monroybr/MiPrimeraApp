@@ -1,26 +1,30 @@
 package com.liseth.miprimeraapp;
 
-import android.content.SharedPreferences;
+import android.database.Cursor;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
-
 public class HistorialDetailActivity extends AppCompatActivity {
 
-    private TextView tvFechaDetalle, tvEnfermedadesDetalle, tvProcedimientosDetalle, tvMedicacionDetalle, tvMensajeDetalle;
+    private TextView tvFechaDetalle, tvEnfermedadesDetalle, tvProcedimientosDetalle,
+            tvMedicacionDetalle, tvMensajeDetalle;
+
     private Button btnEliminarHistorial;
 
-    private int globalIndex = -1;
+    // Aquí guardo el id real del historial en SQLite
+    private int historialId = -1;
+
+    private HistorialDAO historialDAO;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_historial_detail);
+
+        historialDAO = new HistorialDAO(this);
 
         tvFechaDetalle = findViewById(R.id.tvFechaDetalle);
         tvEnfermedadesDetalle = findViewById(R.id.tvEnfermedadesDetalle);
@@ -29,72 +33,56 @@ public class HistorialDetailActivity extends AppCompatActivity {
         tvMensajeDetalle = findViewById(R.id.tvMensajeDetalle);
         btnEliminarHistorial = findViewById(R.id.btnEliminarHistorial);
 
-        globalIndex = getIntent().getIntExtra("hist_global_index", -1);
+        historialId = getIntent().getIntExtra("historial_id", -1);
 
-        if (globalIndex == -1) {
+        if (historialId == -1) {
             tvMensajeDetalle.setText("Registro no encontrado.");
             return;
         }
 
-        cargarRegistro(globalIndex);
+        cargarRegistro(historialId);
 
-        btnEliminarHistorial.setOnClickListener(v -> eliminarRegistro(globalIndex));
+        btnEliminarHistorial.setOnClickListener(v -> eliminarRegistro(historialId));
     }
 
-    private void cargarRegistro(int index) {
-        SharedPreferences prefs = getSharedPreferences("historial", MODE_PRIVATE);
-        String json = prefs.getString("historial_json", "[]");
+    // Este metodo carga el registro clínico desde SQLite
+    private void cargarRegistro(int id) {
+        Cursor cursor = historialDAO.obtenerHistorialPorId(id);
 
         try {
-            JSONArray arr = new JSONArray(json);
+            if (cursor != null && cursor.moveToFirst()) {
+                String fecha = cursor.getString(cursor.getColumnIndexOrThrow("fecha_registro"));
+                String enfermedades = cursor.getString(cursor.getColumnIndexOrThrow("enfermedades"));
+                String procedimientos = cursor.getString(cursor.getColumnIndexOrThrow("procedimientos"));
+                String medicacion = cursor.getString(cursor.getColumnIndexOrThrow("medicacion"));
 
-            if (index < 0 || index >= arr.length()) {
+                tvFechaDetalle.setText("Fecha: " + (fecha == null || fecha.isEmpty() ? "-" : fecha));
+                tvEnfermedadesDetalle.setText("Enfermedades: " + (enfermedades == null || enfermedades.isEmpty() ? "-" : enfermedades));
+                tvProcedimientosDetalle.setText("Procedimientos: " + (procedimientos == null || procedimientos.isEmpty() ? "-" : procedimientos));
+                tvMedicacionDetalle.setText("Medicación: " + (medicacion == null || medicacion.isEmpty() ? "-" : medicacion));
+
+            } else {
                 tvMensajeDetalle.setText("Registro no encontrado.");
-                return;
             }
-
-            JSONObject obj = arr.getJSONObject(index);
-
-            String fecha = obj.optString("fechaRegistro", "-");
-            String enf = obj.optString("enfermedades", "");
-            String proc = obj.optString("procedimientos", "");
-            String med = obj.optString("medicacion", "");
-
-            tvFechaDetalle.setText("Fecha: " + fecha);
-            tvEnfermedadesDetalle.setText("Enfermedades: " + (enf.isEmpty() ? "-" : enf));
-            tvProcedimientosDetalle.setText("Procedimientos: " + (proc.isEmpty() ? "-" : proc));
-            tvMedicacionDetalle.setText("Medicación: " + (med.isEmpty() ? "-" : med));
 
         } catch (Exception e) {
             tvMensajeDetalle.setText("Error cargando el registro.");
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
         }
     }
 
-    private void eliminarRegistro(int index) {
-        SharedPreferences prefs = getSharedPreferences("historial", MODE_PRIVATE);
-        String json = prefs.getString("historial_json", "[]");
+    // Este metodo elimina el registro clínico desde SQLite
+    private void eliminarRegistro(int id) {
+        int resultado = historialDAO.eliminarHistorial(id);
 
-        try {
-            JSONArray arr = new JSONArray(json);
-
-            if (index < 0 || index >= arr.length()) {
-                tvMensajeDetalle.setText("No se pudo eliminar (índice inválido).");
-                return;
-            }
-
-            JSONArray nuevo = new JSONArray();
-            for (int i = 0; i < arr.length(); i++) {
-                if (i == index) continue;
-                nuevo.put(arr.getJSONObject(i));
-            }
-
-            prefs.edit().putString("historial_json", nuevo.toString()).apply();
-
+        if (resultado > 0) {
             tvMensajeDetalle.setText("Registro eliminado ✅");
             finish();
-
-        } catch (Exception e) {
-            tvMensajeDetalle.setText("Error eliminando el registro.");
+        } else {
+            tvMensajeDetalle.setText("No se pudo eliminar el registro.");
         }
     }
 }

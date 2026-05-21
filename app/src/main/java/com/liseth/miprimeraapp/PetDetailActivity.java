@@ -22,7 +22,8 @@ public class PetDetailActivity extends AppCompatActivity {
     private ImageView imgMascotaDetalle;
 
     private Button btnEditarMascota, btnAgregarVacuna, btnCarnetVacunas,
-            btnAgregarHistorial, btnVerHistorial, btnCompartirInfo;
+            btnAgregarHistorial, btnVerHistorial, btnAgendarCita,
+            btnVerCitas, btnCompartirInfo;
 
     private int petId = -1;
     private int petIndex = -1;
@@ -34,7 +35,6 @@ public class PetDetailActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_pet_detail);
 
-        // Aquí inicializo el DAO de mascotas
         mascotaDAO = new MascotaDAO(this);
 
         imgMascotaDetalle = findViewById(R.id.imgMascotaDetalle);
@@ -56,12 +56,11 @@ public class PetDetailActivity extends AppCompatActivity {
         btnCarnetVacunas = findViewById(R.id.btnCarnetVacunas);
         btnAgregarHistorial = findViewById(R.id.btnAgregarHistorial);
         btnVerHistorial = findViewById(R.id.btnVerHistorial);
+        btnAgendarCita = findViewById(R.id.btnAgendarCita);
+        btnVerCitas = findViewById(R.id.btnVerCitas);
         btnCompartirInfo = findViewById(R.id.btnCompartirInfo);
 
-        // Aquí recibo el id real de la mascota guardada en SQLite
         petId = getIntent().getIntExtra("pet_id", -1);
-
-        // Mantengo el índice mientras vacunas e historial siguen en la fase anterior
         petIndex = getIntent().getIntExtra("pet_index", -1);
 
         if (petId == -1) {
@@ -78,24 +77,42 @@ public class PetDetailActivity extends AppCompatActivity {
 
         btnAgregarVacuna.setOnClickListener(v -> {
             Intent intent = new Intent(PetDetailActivity.this, AddVacunacionActivity.class);
+            intent.putExtra("pet_id", petId);
             intent.putExtra("pet_index", petIndex);
             startActivity(intent);
         });
 
         btnCarnetVacunas.setOnClickListener(v -> {
             Intent intent = new Intent(PetDetailActivity.this, VacunasListActivity.class);
+            intent.putExtra("pet_id", petId);
             intent.putExtra("pet_index", petIndex);
             startActivity(intent);
         });
 
         btnAgregarHistorial.setOnClickListener(v -> {
             Intent intent = new Intent(PetDetailActivity.this, AddHistorialActivity.class);
+            intent.putExtra("pet_id", petId);
             intent.putExtra("pet_index", petIndex);
             startActivity(intent);
         });
 
         btnVerHistorial.setOnClickListener(v -> {
             Intent intent = new Intent(PetDetailActivity.this, HistorialListActivity.class);
+            intent.putExtra("pet_id", petId);
+            intent.putExtra("pet_index", petIndex);
+            startActivity(intent);
+        });
+
+        btnAgendarCita.setOnClickListener(v -> {
+            Intent intent = new Intent(PetDetailActivity.this, AddCitaActivity.class);
+            intent.putExtra("pet_id", petId);
+            intent.putExtra("pet_index", petIndex);
+            startActivity(intent);
+        });
+
+        btnVerCitas.setOnClickListener(v -> {
+            Intent intent = new Intent(PetDetailActivity.this, CitasListActivity.class);
+            intent.putExtra("pet_id", petId);
             intent.putExtra("pet_index", petIndex);
             startActivity(intent);
         });
@@ -114,13 +131,11 @@ public class PetDetailActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
 
-        // Al regresar a esta pantalla, actualizo la información desde SQLite
         if (petId != -1) {
             cargarMascotaPorId(petId);
         }
     }
 
-    // Este metodo carga la información de la mascota desde SQLite
     private void cargarMascotaPorId(int id) {
         Cursor cursor = mascotaDAO.obtenerMascotaPorId(id);
 
@@ -147,11 +162,9 @@ public class PetDetailActivity extends AppCompatActivity {
                 tvAlergiasDetalle.setText("Alergias: " + (alergias == null || alergias.isEmpty() ? "-" : alergias));
                 tvObservacionesDetalle.setText("Observaciones: " + (observaciones == null || observaciones.isEmpty() ? "-" : observaciones));
 
-                // Estas secciones se migrarán después a SQLite en la siguiente fase
-                tvVacunasDetalle.setText("Vacunas registradas: se migrarán en la siguiente fase");
-                tvHistorialDetalle.setText("Registros clínicos: se migrarán en la siguiente fase");
+                tvVacunasDetalle.setText("Vacunas registradas: revisa el carnet de vacunación");
+                tvHistorialDetalle.setText("Historial médico: revisa los registros clínicos");
 
-                // Aquí cargo la foto de la mascota si existe
                 if (imagenUri != null && !imagenUri.isEmpty()) {
                     try {
                         Uri uri = Uri.parse(imagenUri);
@@ -175,7 +188,6 @@ public class PetDetailActivity extends AppCompatActivity {
         }
     }
 
-    // Este metodo muestra información por defecto si no se encuentra la mascota
     private void mostrarMascotaNoEncontrada() {
         tvNombreDetalle.setText("Mascota no encontrada");
         tvInfoBasicaDetalle.setText("-");

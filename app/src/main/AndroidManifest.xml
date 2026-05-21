@@ -2,22 +2,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Permiso para acceso a internet -->
     <uses-permission android:name="android.permission.INTERNET" />
-
-    <!-- Permiso para verificar estado de red -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-
-    <!-- Permiso para notificaciones en Android 13 o superior -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-
-    <!-- Permiso para usar la cámara -->
     <uses-permission android:name="android.permission.CAMERA" />
-
-    <!-- Permiso para leer imágenes en Android 13+ -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
 
-    <!-- Compatibilidad con versiones anteriores -->
     <uses-permission
         android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
@@ -32,12 +22,10 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.MiPrimeraApp">
 
-        <!-- Aquí configuro la API KEY de Google Maps -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyCf9bZ8hWrWtX8t_YfJeTYLHge4YRNFUvM" />
 
-        <!-- Provider para compartir archivos PDF -->
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.provider"
@@ -49,7 +37,6 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
-        <!-- Receiver para recordatorios exactos de vacunas -->
         <receiver
             android:name=".VaccineReminderReceiver"
             android:exported="false" />
@@ -58,7 +45,6 @@
             android:name=".CitaReminderReceiver"
             android:exported="false" />
 
-        <!-- Activities de la aplicación -->
         <activity
             android:name=".OwnerProfileActivity"
             android:exported="false" />
@@ -143,7 +129,6 @@
             android:name=".LoginActivity"
             android:exported="false" />
 
-        <!-- Activity principal -->
         <activity
             android:name=".MainActivity"
             android:exported="true">
@@ -154,6 +139,7 @@
             </intent-filter>
 
         </activity>
+
     </application>
 
 </manifest>

@@ -10,7 +10,7 @@
         android:id="@+id/tvTituloCitas"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="Citas Veterinarias"
+        android:text="Citas veterinarias"
         android:textSize="22sp"
         android:textStyle="bold"
         app:layout_constraintTop_toTopOf="parent"
@@ -21,10 +21,10 @@
         android:id="@+id/tvVacioCitas"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="Aún no tienes citas registradas."
+        android:text="No hay citas registradas."
         android:textAlignment="center"
         android:visibility="gone"
-        android:layout_marginTop="14dp"
+        android:layout_marginTop="12dp"
         app:layout_constraintTop_toBottomOf="@id/tvTituloCitas"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
@@ -38,4 +38,5 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
+
 </androidx.constraintlayout.widget.ConstraintLayout>

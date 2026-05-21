@@ -10,58 +10,61 @@
         android:layout_height="wrap_content">
 
         <TextView
-            android:id="@+id/tvTituloAddCita"
+            android:id="@+id/tvTituloCita"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Registrar Cita Veterinaria"
-            android:textSize="24sp"
+            android:text="Agendar cita veterinaria"
+            android:textSize="22sp"
             android:textStyle="bold"
             android:textAlignment="center"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent" />
+            app:layout_constraintEnd_toEndOf="parent"/>
 
-        <Spinner
-            android:id="@+id/spMascotasCita"
+        <TextView
+            android:id="@+id/tvNombreMascotaCita"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            app:layout_constraintTop_toBottomOf="@id/tvTituloAddCita"
+            android:text="Mascota"
+            android:textStyle="bold"
+            android:layout_marginTop="18dp"
+            app:layout_constraintTop_toBottomOf="@id/tvTituloCita"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent" />
+            app:layout_constraintEnd_toEndOf="parent"/>
 
         <EditText
             android:id="@+id/etFechaCita"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:hint="Fecha de la cita (dd/mm/aaaa)"
+            android:hint="Fecha de la cita"
             android:focusable="false"
             android:clickable="true"
-            android:layout_marginTop="12dp"
-            app:layout_constraintTop_toBottomOf="@id/spMascotasCita"
+            android:layout_marginTop="14dp"
+            app:layout_constraintTop_toBottomOf="@id/tvNombreMascotaCita"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent" />
+            app:layout_constraintEnd_toEndOf="parent"/>
 
         <EditText
             android:id="@+id/etHoraCita"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:hint="Hora (ej: 14:30)"
-            android:inputType="time"
-            android:layout_marginTop="12dp"
+            android:hint="Hora de la cita"
+            android:focusable="false"
+            android:clickable="true"
+            android:layout_marginTop="10dp"
             app:layout_constraintTop_toBottomOf="@id/etFechaCita"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent" />
+            app:layout_constraintEnd_toEndOf="parent"/>
 
         <EditText
-            android:id="@+id/etVeterinariaCita"
+            android:id="@+id/etVeterinaria"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:hint="Veterinaria o clínica"
-            android:layout_marginTop="12dp"
+            android:layout_marginTop="10dp"
             app:layout_constraintTop_toBottomOf="@id/etHoraCita"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent" />
+            app:layout_constraintEnd_toEndOf="parent"/>
 
         <EditText
             android:id="@+id/etMotivoCita"
@@ -69,12 +72,11 @@
             android:layout_height="wrap_content"
             android:hint="Motivo de la cita"
             android:minLines="3"
-            android:gravity="top|start"
-            android:inputType="textMultiLine"
-            android:layout_marginTop="12dp"
-            app:layout_constraintTop_toBottomOf="@id/etVeterinariaCita"
+            android:gravity="top"
+            android:layout_marginTop="10dp"
+            app:layout_constraintTop_toBottomOf="@id/etVeterinaria"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent" />
+            app:layout_constraintEnd_toEndOf="parent"/>
 
         <Button
             android:id="@+id/btnGuardarCita"
@@ -84,7 +86,7 @@
             android:layout_marginTop="16dp"
             app:layout_constraintTop_toBottomOf="@id/etMotivoCita"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent" />
+            app:layout_constraintEnd_toEndOf="parent"/>
 
         <TextView
             android:id="@+id/tvMensajeCita"
@@ -95,7 +97,8 @@
             android:layout_marginTop="10dp"
             app:layout_constraintTop_toBottomOf="@id/btnGuardarCita"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent" />
+            app:layout_constraintEnd_toEndOf="parent"/>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
+
 </ScrollView>
